@@ -13,15 +13,7 @@ class FaceService:
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         
         # 初始化MTCNN人脸检测器
-        self.mtcnn = MTCNN(
-            image_size=160,
-            margin=0,
-            min_face_size=20,
-            thresholds=[0.6, 0.7, 0.7],
-            factor=0.709,
-            post_process=False,
-            device=self.device
-        )
+        self.mtcnn = MTCNN(keep_all=False, device=self.device)
         
         # 初始化Inception Resnet V1模型
         self.resnet = InceptionResnetV1(pretrained='vggface2').eval().to(self.device)
