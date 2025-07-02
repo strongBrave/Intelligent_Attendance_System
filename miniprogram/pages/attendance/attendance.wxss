@@ -1,0 +1,627 @@
+/* 签到/签退界面样式 */
+.attendance-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20rpx;
+  box-sizing: border-box;
+}
+
+/* 顶部信息栏 */
+.header {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10rpx;
+}
+
+.department {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.time-info {
+  text-align: right;
+}
+
+.current-time {
+  display: block;
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10rpx;
+}
+
+.current-date {
+  display: block;
+  font-size: 28rpx;
+  color: #666;
+}
+
+/* 距离状态显示 */
+.distance-status {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.status-indicator.in-range {
+  border-left: 8rpx solid #52c41a;
+}
+
+.status-indicator.out-range {
+  border-left: 8rpx solid #ff4d4f;
+}
+
+.status-icon {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+}
+
+.in-range .status-icon {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.out-range .status-icon {
+  background: #fff2f0;
+  color: #ff4d4f;
+}
+
+.status-text {
+  flex: 1;
+}
+
+.status-message {
+  display: block;
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-bottom: 8rpx;
+}
+
+.in-range .status-message {
+  color: #52c41a;
+}
+
+.out-range .status-message {
+  color: #ff4d4f;
+}
+
+.threshold-info {
+  display: block;
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* 地图显示区域 */
+.map-section {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20rpx;
+  padding: 20rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+/* 搜索功能样式 */
+.search-section {
+  margin-bottom: 20rpx;
+}
+
+.search-input-group {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-bottom: 15rpx;
+}
+
+.search-input {
+  flex: 1;
+  height: 70rpx;
+  padding: 0 20rpx;
+  border: 2rpx solid #e8e8e8;
+  border-radius: 35rpx;
+  font-size: 28rpx;
+  background: white;
+}
+
+.search-btn {
+  width: 70rpx;
+  height: 70rpx;
+  border-radius: 50%;
+  background: #1890ff;
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+}
+
+.search-results {
+  max-height: 400rpx;
+  overflow-y: auto;
+  background: white;
+  border-radius: 15rpx;
+  border: 2rpx solid #e8e8e8;
+}
+
+.search-result-item {
+  padding: 20rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+  cursor: pointer;
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.search-result-item:active {
+  background: #f5f5f5;
+}
+
+.result-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.result-address {
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 5rpx;
+}
+
+.result-distance {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.map-container {
+  border-radius: 15rpx;
+  overflow: hidden;
+  margin-bottom: 20rpx;
+}
+
+.map-controls {
+  display: flex;
+  justify-content: center;
+}
+
+.control-btn {
+  background: #1890ff;
+  color: white;
+  border: none;
+  border-radius: 50rpx;
+  padding: 20rpx 40rpx;
+  font-size: 28rpx;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+/* 地图切换按钮 */
+.map-toggle {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20rpx;
+}
+
+.toggle-btn {
+  background: rgba(255, 255, 255, 0.9);
+  color: #1890ff;
+  border: 2rpx solid #1890ff;
+  border-radius: 50rpx;
+  padding: 20rpx 40rpx;
+  font-size: 28rpx;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+/* 今日考勤状态 */
+.today-status {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.status-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+  text-align: center;
+}
+
+.status-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 15rpx;
+}
+
+.status-label {
+  font-size: 28rpx;
+  color: #666;
+  min-width: 160rpx;
+}
+
+.status-value {
+  font-size: 28rpx;
+  font-weight: bold;
+  flex: 1;
+  text-align: center;
+}
+
+.status-value.has-time {
+  color: #52c41a;
+}
+
+.status-value.no-time {
+  color: #999;
+}
+
+.status-badge {
+  padding: 8rpx 16rpx;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  color: white;
+  margin-left: 20rpx;
+}
+
+.status-badge.normal {
+  background: #52c41a;
+}
+
+.status-badge.late {
+  background: #faad14;
+}
+
+.status-badge.absent {
+  background: #ff4d4f;
+}
+
+.status-badge.early-leave {
+  background: #fa8c16;
+}
+
+/* 打卡按钮区域 */
+.attendance-buttons {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.status-tip {
+  margin-bottom: 30rpx;
+}
+
+.tip-content {
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+  padding: 20rpx;
+  border-radius: 15rpx;
+  font-size: 28rpx;
+}
+
+.tip-content.error {
+  background: #fff2f0;
+  color: #ff4d4f;
+  border: 2rpx solid #ffccc7;
+}
+
+.tip-content.warning {
+  background: #fffbe6;
+  color: #faad14;
+  border: 2rpx solid #ffe58f;
+}
+
+.attendance-btn {
+  width: 100%;
+  height: 120rpx;
+  border-radius: 20rpx;
+  margin-bottom: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  border: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.attendance-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 8rpx 25rpx rgba(102, 126, 234, 0.4);
+}
+
+.attendance-btn.disabled {
+  background: #f5f5f5;
+  color: #ccc;
+}
+
+.btn-icon {
+  font-size: 40rpx;
+}
+
+.btn-text {
+  font-size: 32rpx;
+}
+
+.btn-time {
+  position: absolute;
+  right: 30rpx;
+  font-size: 24rpx;
+  opacity: 0.8;
+}
+
+.sign-in-btn.active {
+  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
+  box-shadow: 0 8rpx 25rpx rgba(82, 196, 26, 0.4);
+}
+
+.sign-out-btn.active {
+  background: linear-gradient(135deg, #1890ff 0%, #40a9ff 100%);
+  box-shadow: 0 8rpx 25rpx rgba(24, 144, 255, 0.4);
+}
+
+.face-btn.active {
+  background: linear-gradient(135deg, #722ed1 0%, #9254de 100%);
+  box-shadow: 0 8rpx 25rpx rgba(114, 46, 209, 0.4);
+}
+
+/* 位置信息 */
+.location-info {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20rpx;
+  padding: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.location-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15rpx;
+}
+
+.location-item:last-child {
+  margin-bottom: 0;
+}
+
+.location-label {
+  font-size: 28rpx;
+  color: #666;
+  min-width: 160rpx;
+}
+
+.location-value {
+  font-size: 28rpx;
+  color: #333;
+  flex: 1;
+  word-break: break-all;
+}
+
+/* 图标字体 */
+.iconfont {
+  font-family: "iconfont";
+}
+
+.icon-success::before {
+  content: "✓";
+}
+
+.icon-error::before {
+  content: "✗";
+}
+
+.icon-warning::before {
+  content: "⚠";
+}
+
+.icon-refresh::before {
+  content: "🔄";
+}
+
+.icon-map::before {
+  content: "🗺";
+}
+
+.icon-search::before {
+  content: "🔍";
+}
+
+/* 响应式设计 */
+@media (max-width: 750rpx) {
+  .header {
+    flex-direction: column;
+    gap: 20rpx;
+    text-align: center;
+  }
+  
+  .time-info {
+    text-align: center;
+  }
+  
+  .status-item {
+    flex-direction: column;
+    gap: 10rpx;
+    text-align: center;
+  }
+  
+  .status-label {
+    min-width: auto;
+  }
+  
+  .location-item {
+    flex-direction: column;
+    gap: 10rpx;
+    text-align: center;
+  }
+  
+  .location-label {
+    min-width: auto;
+  }
+}
+
+.face-modal-mask {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.face-modal {
+  position: relative;
+  width: 90vw;
+  height: 90vw;
+  max-width: 600rpx;
+  max-height: 600rpx;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.face-camera {
+  width: 90vw;
+  height: 90vw;
+  max-width: 600rpx;
+  max-height: 600rpx;
+  border-radius: 50%;
+  overflow: hidden;
+  position: absolute;
+  top: 0; left: 0;
+}
+
+.circle-mask {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  margin: auto;
+  width: 90vw;
+  height: 90vw;
+  max-width: 600rpx;
+  max-height: 600rpx;
+  border-radius: 50%;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.7);
+  pointer-events: none;
+}
+
+.face-modal-header {
+  position: absolute;
+  top: 20rpx;
+  left: 0; right: 0;
+  text-align: center;
+  z-index: 2;
+}
+
+.face-modal-title {
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+}
+
+.face-modal-timer {
+  color: #fff;
+  font-size: 28rpx;
+  margin-left: 20rpx;
+}
+
+.face-modal-footer {
+  position: absolute;
+  bottom: 30rpx;
+  left: 0; right: 0;
+  text-align: center;
+  z-index: 2;
+}
+
+.face-modal-exit {
+  background: rgba(255,255,255,0.8);
+  color: #333;
+  border: none;
+  border-radius: 30rpx;
+  padding: 16rpx 48rpx;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.face-modal-tip {
+  position: absolute;
+  bottom: 100rpx;
+  left: 0; right: 0;
+  text-align: center;
+  z-index: 2;
+}
+
+.fail-text {
+  color: #ff4d4f;
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.timeout-text {
+  color: #faad14;
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.success-text {
+  color: #52c41a;
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.pending-text {
+  color: #1890ff;
+  font-size: 32rpx;
+  font-weight: bold;
+} 

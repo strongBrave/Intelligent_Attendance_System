@@ -1,0 +1,134 @@
+<view class="calendar-container">
+  <!-- 顶部导航 -->
+  <view class="header">
+    <view class="month-selector">
+      <view class="arrow" bindtap="prevMonth">
+        <text class="arrow-text">‹</text>
+      </view>
+      <view class="current-month">
+        <text class="month-text">{{currentYear}}年{{currentMonth}}月</text>
+      </view>
+      <view class="arrow" bindtap="nextMonth">
+        <text class="arrow-text">›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 统计卡片 -->
+  <view class="stats-cards">
+    <view class="stat-card">
+      <view class="stat-icon normal">
+        <text class="icon">✓</text>
+      </view>
+      <view class="stat-content">
+        <text class="stat-number">{{stats.normal}}</text>
+        <text class="stat-label">正常</text>
+      </view>
+    </view>
+    <view class="stat-card">
+      <view class="stat-icon late">
+        <text class="icon">⏰</text>
+      </view>
+      <view class="stat-content">
+        <text class="stat-number">{{stats.late}}</text>
+        <text class="stat-label">迟到</text>
+      </view>
+    </view>
+    <view class="stat-card">
+      <view class="stat-icon absent">
+        <text class="icon">✗</text>
+      </view>
+      <view class="stat-content">
+        <text class="stat-number">{{stats.absent}}</text>
+        <text class="stat-label">缺勤</text>
+      </view>
+    </view>
+    <view class="stat-card">
+      <view class="stat-icon early">
+        <text class="icon">↩</text>
+      </view>
+      <view class="stat-content">
+        <text class="stat-number">{{stats.early_leave}}</text>
+        <text class="stat-label">早退</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 星期标题 -->
+  <view class="weekdays">
+    <view class="weekday" wx:for="{{weekdays}}" wx:key="*this">
+      <text class="weekday-text">{{item}}</text>
+    </view>
+  </view>
+
+  <!-- 日历网格 -->
+  <view class="calendar-grid">
+    <view 
+      class="calendar-day {{item.isCurrentMonth ? '' : 'other-month'}} {{item.isToday ? 'today' : ''}} {{item.attendance ? 'has-attendance' : ''}}"
+      wx:for="{{calendarDays}}" 
+      wx:key="date"
+      bindtap="selectDate"
+      data-date="{{item.date}}"
+    >
+      <view class="day-number">{{item.day}}</view>
+      <view class="attendance-status" wx:if="{{item.attendance}}">
+        <view class="status-dot {{item.attendance.status}}"></view>
+        <view class="attendance-times" wx:if="{{item.attendance.sign_in || item.attendance.sign_out}}">
+          <text class="time-text" wx:if="{{item.attendance.sign_in}}">{{item.attendance.sign_in}}</text>
+          <text class="time-text" wx:if="{{item.attendance.sign_out}}">{{item.attendance.sign_out}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 选中日期详情 -->
+  <view class="date-detail" wx:if="{{selectedDate}}">
+    <view class="detail-header">
+      <text class="detail-title">{{selectedDate}} 考勤详情</text>
+    </view>
+    <view class="detail-content">
+      <view class="detail-item" wx:if="{{selectedAttendance.sign_in}}">
+        <view class="detail-label">
+          <text class="label-text">签到时间</text>
+        </view>
+        <view class="detail-value">
+          <text class="value-text">{{selectedAttendance.sign_in}}</text>
+        </view>
+      </view>
+      <view class="detail-item" wx:if="{{selectedAttendance.sign_out}}">
+        <view class="detail-label">
+          <text class="label-text">签退时间</text>
+        </view>
+        <view class="detail-value">
+          <text class="value-text">{{selectedAttendance.sign_out}}</text>
+        </view>
+      </view>
+      <view class="detail-item">
+        <view class="detail-label">
+          <text class="label-text">考勤状态</text>
+        </view>
+        <view class="detail-value">
+          <text class="value-text {{selectedAttendance.status}}">{{selectedAttendance.statusText}}</text>
+        </view>
+      </view>
+      <view class="detail-item" wx:if="{{selectedAttendance.location}}">
+        <view class="detail-label">
+          <text class="label-text">打卡位置</text>
+        </view>
+        <view class="detail-value">
+          <text class="value-text">{{selectedAttendance.location}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作 -->
+  <view class="bottom-actions">
+    <button class="action-btn" bindtap="goToAttendance">
+      <text class="btn-text">去打卡</text>
+    </button>
+    <button class="action-btn secondary" bindtap="refreshData">
+      <text class="btn-text">刷新</text>
+    </button>
+  </view>
+</view> 

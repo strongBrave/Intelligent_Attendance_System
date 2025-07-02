@@ -1,0 +1,39 @@
+<view class="container">
+  <view class="login-box">
+    <view class="title">智慧考勤系统</view>
+    <view class="subtitle">请使用手机号登录</view>
+    
+    <view class="form">
+      <view class="input-group">
+        <input class="input" placeholder="请输入手机号" type="number" bindinput="onPhoneInput" value="{{phone}}" />
+      </view>
+      
+      <view class="input-group password-group">
+        <input class="input" placeholder="请输入密码" password="{{!showPassword}}" bindinput="onPasswordInput" value="{{password}}" />
+        <view class="password-toggle" bindtap="togglePassword">
+          <text class="toggle-icon">{{showPassword ? '👁️' : '👁️‍🗨️'}}</text>
+        </view>
+      </view>
+      
+      <view class="input-group captcha-group">
+        <input class="input captcha-input" placeholder="请输入验证码" bindinput="onCaptchaInput" value="{{captcha}}" maxlength="4" />
+        <view class="captcha-image-container" bindtap="refreshCaptcha">
+          <image v-if="{{captchaImage}}" src="{{captchaImage}}" class="captcha-image" mode="aspectFit" />
+          <view v-else class="captcha-loading">
+            <text class="loading-text"></text>
+          </view>
+        </view>
+      </view>
+      
+      <button class="login-btn" bindtap="onLogin" loading="{{loading}}">登录</button>
+      
+      <view class="tips">
+        <text class="tips-text">请联系管理员创建账号</text>
+      </view>
+      
+      <view class="forgot-password">
+        <text class="forgot-text" bindtap="onForgotPassword">忘记密码？</text>
+      </view>
+    </view>
+  </view>
+</view> 

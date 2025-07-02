@@ -1,0 +1,319 @@
+/* 考勤记录查询页面样式 */
+.container {
+  min-height: 100vh;
+  background: #f5f7fa;
+  padding: 20rpx;
+}
+
+/* 页面标题 */
+.header {
+  background: white;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  text-align: center;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
+}
+
+.title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+/* 查询区域 */
+.query-section {
+  background: white;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
+}
+
+.query-form {
+  display: flex;
+  flex-direction: column;
+  gap: 30rpx;
+}
+
+.form-item {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.label {
+  font-size: 28rpx;
+  color: #333;
+  min-width: 120rpx;
+}
+
+.picker {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 10rpx;
+  border: 2rpx solid #e9ecef;
+}
+
+.picker-text {
+  font-size: 28rpx;
+  color: #333;
+}
+
+.picker-arrow {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.separator {
+  font-size: 28rpx;
+  color: #666;
+  margin: 0 10rpx;
+}
+
+/* 快捷日期选择 */
+.quick-dates {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.quick-label {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: bold;
+}
+
+.quick-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15rpx;
+}
+
+.quick-btn {
+  font-size: 24rpx;
+  padding: 15rpx 25rpx;
+  background: #f8f9fa;
+  color: #666;
+  border: 2rpx solid #e9ecef;
+  border-radius: 25rpx;
+  min-width: auto;
+  line-height: 1.2;
+}
+
+.quick-btn:active {
+  background: #e9ecef;
+}
+
+/* 查询按钮 */
+.query-actions {
+  display: flex;
+  gap: 20rpx;
+}
+
+.query-btn {
+  flex: 1;
+  background: #007AFF;
+  color: white;
+  border: none;
+  border-radius: 10rpx;
+  padding: 25rpx;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.query-btn:active {
+  background: #0056b3;
+}
+
+.reset-btn {
+  flex: 1;
+  background: #f8f9fa;
+  color: #666;
+  border: 2rpx solid #e9ecef;
+  border-radius: 10rpx;
+  padding: 25rpx;
+  font-size: 28rpx;
+}
+
+.reset-btn:active {
+  background: #e9ecef;
+}
+
+/* 统计信息 */
+.stats-section {
+  background: white;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
+}
+
+.stats-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 30rpx;
+  text-align: center;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20rpx;
+}
+
+.stats-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.stats-number {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.stats-number.normal {
+  color: #52c41a;
+}
+
+.stats-number.late {
+  color: #faad14;
+}
+
+.stats-number.absent {
+  color: #ff4d4f;
+}
+
+.stats-number.early_leave {
+  color: #fa8c16;
+}
+
+.stats-label {
+  font-size: 24rpx;
+  color: #666;
+}
+
+/* 考勤记录列表 */
+.records-section {
+  background: white;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
+}
+
+.records-header {
+  margin-bottom: 30rpx;
+}
+
+.records-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.records-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.record-item {
+  border: 2rpx solid #e9ecef;
+  border-radius: 15rpx;
+  padding: 25rpx;
+  background: #f8f9fa;
+}
+
+.record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.record-date {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.record-status {
+  padding: 8rpx 16rpx;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  color: white;
+}
+
+.record-status.normal {
+  background: #52c41a;
+}
+
+.record-status.late {
+  background: #faad14;
+}
+
+.record-status.absent {
+  background: #ff4d4f;
+}
+
+.record-status.early_leave {
+  background: #fa8c16;
+}
+
+.record-status.not_yet_time {
+  background: #999;
+}
+
+.record-content {
+  display: flex;
+  flex-direction: column;
+  gap: 15rpx;
+}
+
+.record-time {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.time-label {
+  font-size: 26rpx;
+  color: #666;
+  min-width: 80rpx;
+}
+
+.time-value {
+  font-size: 26rpx;
+  color: #333;
+  font-weight: bold;
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 60rpx 0;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #999;
+}
+
+/* 加载状态 */
+.loading-state {
+  text-align: center;
+  padding: 60rpx 0;
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #666;
+} 

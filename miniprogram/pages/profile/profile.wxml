@@ -1,0 +1,150 @@
+<view class="profile-container">
+  <!-- 用户信息卡片 -->
+  <view class="user-card">
+    <view class="user-avatar">
+      <image class="avatar-image" src="{{userInfo.avatar || '/images/default-avatar.png'}}" mode="aspectFill"></image>
+    </view>
+    <view class="user-info">
+      <text class="user-name">{{userInfo.name}}</text>
+      <text class="user-phone">{{userInfo.phone}}</text>
+      <text class="user-department">{{userInfo.department ? userInfo.department.name : '未分配部门'}}</text>
+    </view>
+  </view>
+
+  <!-- 人脸信息展示 -->
+  <view class="face-section" wx:if="{{hasFace}}">
+    <view class="section-header">
+      <text class="section-title">注册人脸</text>
+    </view>
+    <view class="face-content">
+      <image class="face-image" src="{{faceUrl}}" mode="aspectFill"></image>
+      <view class="face-info">
+        <text class="face-status">已注册人脸信息</text>
+        <text class="face-tip">管理员已为您注册人脸，可直接进行考勤打卡</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 功能菜单 -->
+  <view class="menu-section">
+    <view class="menu-group">
+      <!-- 管理员功能：部门管理 -->
+      <view class="menu-item" bindtap="goToDepartmentManagement" wx:if="{{userInfo.role === 'admin'}}">
+        <view class="menu-icon department-icon">
+          <text class="icon-text">🏢</text>
+        </view>
+        <view class="menu-content">
+          <text class="menu-title">部门管理</text>
+          <text class="menu-subtitle">管理部门设置</text>
+        </view>
+        <view class="menu-arrow">
+          <text class="arrow-text">›</text>
+        </view>
+      </view>
+      
+      <view class="menu-item" bindtap="goToAttendanceHistory">
+        <view class="menu-icon history-icon">
+          <text class="icon-text">📊</text>
+        </view>
+        <view class="menu-content">
+          <text class="menu-title">考勤记录</text>
+          <text class="menu-subtitle">查看历史考勤</text>
+        </view>
+        <view class="menu-arrow">
+          <text class="arrow-text">›</text>
+        </view>
+      </view>
+      
+      <view class="menu-item" bindtap="goToSettings">
+        <view class="menu-icon settings-icon">
+          <text class="icon-text">⚙️</text>
+        </view>
+        <view class="menu-content">
+          <text class="menu-title">设置</text>
+          <text class="menu-subtitle">应用设置</text>
+        </view>
+        <view class="menu-arrow">
+          <text class="arrow-text">›</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 今日考勤状态 -->
+  <view class="today-status-section">
+    <view class="section-header">
+      <text class="section-title">今日考勤</text>
+    </view>
+    <view class="status-content">
+      <view class="status-item" wx:if="{{todayStatus.sign_in}}">
+        <view class="status-icon signin-icon">
+          <text class="icon-text">✓</text>
+        </view>
+        <view class="status-info">
+          <text class="status-label">签到时间</text>
+          <text class="status-time">{{todayStatus.sign_in}}</text>
+        </view>
+        <view class="status-badge {{todayStatus.sign_in_status}}">
+          <text class="badge-text">{{getStatusText(todayStatus.sign_in_status)}}</text>
+        </view>
+      </view>
+      
+      <view class="status-item" wx:if="{{todayStatus.sign_out}}">
+        <view class="status-icon signout-icon">
+          <text class="icon-text">↩</text>
+        </view>
+        <view class="status-info">
+          <text class="status-label">签退时间</text>
+          <text class="status-time">{{todayStatus.sign_out}}</text>
+        </view>
+        <view class="status-badge {{todayStatus.sign_out_status}}">
+          <text class="badge-text">{{getStatusText(todayStatus.sign_out_status)}}</text>
+        </view>
+      </view>
+      
+      <view class="status-item" wx:if="{{!todayStatus.sign_in && !todayStatus.sign_out}}">
+        <view class="status-icon absent-icon">
+          <text class="icon-text">✗</text>
+        </view>
+        <view class="status-info">
+          <text class="status-label">今日状态</text>
+          <text class="status-time">未打卡</text>
+        </view>
+        <view class="status-badge absent">
+          <text class="badge-text">缺勤</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 快捷操作 -->
+  <view class="quick-actions">
+    <view class="action-item" bindtap="goToAttendance">
+      <view class="action-icon">
+        <text class="icon-text">📱</text>
+      </view>
+      <text class="action-text">去打卡</text>
+    </view>
+    
+    <view class="action-item" bindtap="goToCalendar">
+      <view class="action-icon">
+        <text class="icon-text">📅</text>
+      </view>
+      <text class="action-text">考勤日历</text>
+    </view>
+    
+    <view class="action-item" bindtap="goToStats">
+      <view class="action-icon">
+        <text class="icon-text">📈</text>
+      </view>
+      <text class="action-text">考勤统计</text>
+    </view>
+  </view>
+
+  <!-- 底部操作 -->
+  <view class="bottom-actions">
+    <button class="logout-btn" bindtap="logout">
+      <text class="btn-text">退出登录</text>
+    </button>
+  </view>
+</view> 

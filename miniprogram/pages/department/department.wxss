@@ -1,0 +1,333 @@
+/* 部门管理页面样式 */
+.department-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20rpx;
+}
+
+/* 顶部操作栏 */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30rpx;
+  padding: 20rpx 0;
+}
+
+.title {
+  color: white;
+  font-size: 36rpx;
+  font-weight: bold;
+}
+
+.add-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  border-radius: 25rpx;
+  padding: 15rpx 30rpx;
+  font-size: 28rpx;
+  backdrop-filter: blur(10rpx);
+  transition: all 0.3s ease;
+}
+
+.add-btn:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* 部门列表 */
+.department-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.department-item {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20rpx;
+  padding: 30rpx;
+  backdrop-filter: blur(10rpx);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.department-item:active {
+  transform: scale(0.98);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.dept-info {
+  flex: 1;
+}
+
+.dept-name {
+  color: white;
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-bottom: 15rpx;
+}
+
+.dept-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
+  margin-bottom: 10rpx;
+}
+
+.detail-item {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 24rpx;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8rpx 16rpx;
+  border-radius: 15rpx;
+}
+
+.dept-location {
+  margin-top: 10rpx;
+}
+
+.location-text {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 22rpx;
+}
+
+.dept-actions {
+  display: flex;
+  gap: 15rpx;
+}
+
+.action-btn {
+  border: none;
+  border-radius: 20rpx;
+  padding: 12rpx 24rpx;
+  font-size: 24rpx;
+  transition: all 0.3s ease;
+}
+
+.action-btn.edit {
+  background: rgba(64, 158, 255, 0.2);
+  color: #409EFF;
+}
+
+.action-btn.edit:active {
+  background: rgba(64, 158, 255, 0.3);
+  transform: scale(0.95);
+}
+
+.action-btn.delete {
+  background: rgba(245, 108, 108, 0.2);
+  color: #F56C6C;
+}
+
+.action-btn.delete:active {
+  background: rgba(245, 108, 108, 0.3);
+  transform: scale(0.95);
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 100rpx 0;
+}
+
+.empty-text {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 28rpx;
+}
+
+/* 弹窗样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 20rpx;
+  width: 90%;
+  max-width: 600rpx;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx;
+  border-bottom: 2rpx solid #f0f0f0;
+}
+
+.modal-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.modal-close {
+  font-size: 40rpx;
+  color: #999;
+  padding: 10rpx;
+}
+
+/* 表单样式 */
+.form {
+  padding: 30rpx;
+}
+
+.form-item {
+  margin-bottom: 30rpx;
+}
+
+.form-label {
+  display: block;
+  color: #333;
+  font-size: 28rpx;
+  font-weight: 500;
+  margin-bottom: 15rpx;
+}
+
+.form-input {
+  width: 100%;
+  height: 80rpx;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 10rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  background: #fafafa;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  border-color: #409EFF;
+  background: white;
+}
+
+/* 时间选择器样式 */
+.picker-input {
+  width: 100%;
+  height: 80rpx;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 10rpx;
+  padding: 0 20rpx;
+  background: #fafafa;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.picker-text {
+  color: #333;
+  font-size: 28rpx;
+}
+
+.picker-arrow {
+  color: #999;
+  font-size: 24rpx;
+}
+
+/* 位置选择样式 */
+.location-input {
+  display: flex;
+  gap: 15rpx;
+  align-items: center;
+}
+
+.location-input .form-input {
+  flex: 1;
+}
+
+.location-btn {
+  background: #409EFF;
+  color: white;
+  border: none;
+  border-radius: 10rpx;
+  padding: 20rpx 30rpx;
+  font-size: 24rpx;
+  white-space: nowrap;
+}
+
+.location-btn:active {
+  background: #337ecc;
+  transform: scale(0.95);
+}
+
+.location-preview {
+  margin-top: 15rpx;
+  padding: 15rpx;
+  background: #f8f9fa;
+  border-radius: 10rpx;
+  border-left: 4rpx solid #409EFF;
+}
+
+.location-preview .location-text {
+  color: #666;
+  font-size: 24rpx;
+}
+
+/* 表单按钮 */
+.form-actions {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 40rpx;
+  padding-top: 30rpx;
+  border-top: 2rpx solid #f0f0f0;
+}
+
+.form-btn {
+  flex: 1;
+  height: 80rpx;
+  border-radius: 40rpx;
+  border: none;
+  font-size: 28rpx;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.form-btn.cancel {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.form-btn.cancel:active {
+  background: #e0e0e0;
+  transform: scale(0.95);
+}
+
+.form-btn.submit {
+  background: #409EFF;
+  color: white;
+}
+
+.form-btn.submit:active {
+  background: #337ecc;
+  transform: scale(0.95);
+}
+
+/* 加载状态 */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 100rpx 0;
+}
+
+.loading-text {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 28rpx;
+} 

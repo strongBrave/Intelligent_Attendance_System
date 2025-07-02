@@ -1,0 +1,131 @@
+<view class="stats-container">
+  <!-- 顶部统计卡片 -->
+  <view class="stats-header">
+    <view class="header-title">
+      <text class="title-text">考勤统计</text>
+      <text class="subtitle-text">{{currentMonth}}月统计</text>
+    </view>
+    <view class="month-picker">
+      <picker mode="date" fields="month" value="{{selectedMonth}}" bindchange="onMonthChange">
+        <view class="picker-content">
+          <text class="picker-text">{{selectedMonth}}</text>
+          <text class="picker-icon">▼</text>
+        </view>
+      </picker>
+    </view>
+  </view>
+
+  <!-- 统计概览 -->
+  <view class="overview-cards">
+    <view class="overview-card">
+      <view class="card-icon normal">
+        <text class="icon-text">✓</text>
+      </view>
+      <view class="card-content">
+        <text class="card-number">{{overview.normal}}</text>
+        <text class="card-label">正常出勤</text>
+      </view>
+    </view>
+    <view class="overview-card">
+      <view class="card-icon late">
+        <text class="icon-text">⏰</text>
+      </view>
+      <view class="card-content">
+        <text class="card-number">{{overview.late}}</text>
+        <text class="card-label">迟到</text>
+      </view>
+    </view>
+    <view class="overview-card">
+      <view class="card-icon absent">
+        <text class="icon-text">✗</text>
+      </view>
+      <view class="card-content">
+        <text class="card-number">{{overview.absent}}</text>
+        <text class="card-label">缺勤</text>
+      </view>
+    </view>
+    <view class="overview-card">
+      <view class="card-icon early">
+        <text class="icon-text">↩</text>
+      </view>
+      <view class="card-content">
+        <text class="card-number">{{overview.early_leave}}</text>
+        <text class="card-label">早退</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 出勤率 -->
+  <view class="attendance-rate">
+    <view class="rate-header">
+      <text class="rate-title">出勤率</text>
+      <text class="rate-percentage">{{attendanceRate}}%</text>
+    </view>
+    <view class="rate-progress">
+      <view class="progress-bar">
+        <view class="progress-fill" style="width: {{attendanceRate}}%"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 图表区域 -->
+  <view class="chart-section">
+    <view class="chart-header">
+      <text class="chart-title">每日考勤状态</text>
+    </view>
+    <view class="chart-container">
+      <canvas canvas-id="attendanceChart" class="chart-canvas"></canvas>
+    </view>
+  </view>
+
+  <!-- 详细统计 -->
+  <view class="detail-stats">
+    <view class="detail-header">
+      <text class="detail-title">详细统计</text>
+    </view>
+    <view class="detail-content">
+      <view class="detail-item">
+        <view class="detail-label">
+          <text class="label-text">总工作日</text>
+        </view>
+        <view class="detail-value">
+          <text class="value-text">{{detailStats.totalDays}}天</text>
+        </view>
+      </view>
+      <view class="detail-item">
+        <view class="detail-label">
+          <text class="label-text">实际出勤</text>
+        </view>
+        <view class="detail-value">
+          <text class="value-text">{{detailStats.actualDays}}天</text>
+        </view>
+      </view>
+      <view class="detail-item">
+        <view class="detail-label">
+          <text class="label-text">平均签到时间</text>
+        </view>
+        <view class="detail-value">
+          <text class="value-text">{{detailStats.avgSignInTime}}</text>
+        </view>
+      </view>
+      <view class="detail-item">
+        <view class="detail-label">
+          <text class="label-text">平均签退时间</text>
+        </view>
+        <view class="detail-value">
+          <text class="value-text">{{detailStats.avgSignOutTime}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作 -->
+  <view class="bottom-actions">
+    <button class="action-btn" bindtap="refreshData">
+      <text class="btn-text">刷新数据</text>
+    </button>
+    <button class="action-btn secondary" bindtap="exportData">
+      <text class="btn-text">导出报告</text>
+    </button>
+  </view>
+</view> 

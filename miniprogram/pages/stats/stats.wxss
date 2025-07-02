@@ -1,0 +1,321 @@
+/* 统计页面样式 */
+.stats-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20rpx;
+}
+
+/* 顶部统计卡片 */
+.stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
+
+.header-title {
+  display: flex;
+  flex-direction: column;
+}
+
+.title-text {
+  color: white;
+  font-size: 36rpx;
+  font-weight: bold;
+  margin-bottom: 8rpx;
+}
+
+.subtitle-text {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 24rpx;
+}
+
+.month-picker {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20rpx;
+  padding: 15rpx 20rpx;
+  backdrop-filter: blur(10rpx);
+}
+
+.picker-content {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.picker-text {
+  color: white;
+  font-size: 28rpx;
+}
+
+.picker-icon {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 20rpx;
+}
+
+/* 统计概览 */
+.overview-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20rpx;
+  margin-bottom: 30rpx;
+}
+
+.overview-card {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20rpx;
+  padding: 30rpx;
+  display: flex;
+  align-items: center;
+  backdrop-filter: blur(10rpx);
+  transition: all 0.3s ease;
+}
+
+.overview-card:active {
+  transform: scale(0.95);
+}
+
+.card-icon {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+}
+
+.card-icon.normal {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4CAF50;
+}
+
+.card-icon.late {
+  background: rgba(255, 152, 0, 0.2);
+  color: #FF9800;
+}
+
+.card-icon.absent {
+  background: rgba(244, 67, 54, 0.2);
+  color: #F44336;
+}
+
+.card-icon.early {
+  background: rgba(156, 39, 176, 0.2);
+  color: #9C27B0;
+}
+
+.icon-text {
+  font-size: 36rpx;
+  font-weight: bold;
+}
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-number {
+  color: white;
+  font-size: 40rpx;
+  font-weight: bold;
+  margin-bottom: 8rpx;
+}
+
+.card-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 24rpx;
+}
+
+/* 出勤率 */
+.attendance-rate {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  backdrop-filter: blur(10rpx);
+}
+
+.rate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.rate-title {
+  color: white;
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.rate-percentage {
+  color: #4CAF50;
+  font-size: 36rpx;
+  font-weight: bold;
+}
+
+.rate-progress {
+  width: 100%;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 20rpx;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4CAF50 0%, #45a049 100%);
+  border-radius: 10rpx;
+  transition: width 0.5s ease;
+}
+
+/* 图表区域 */
+.chart-section {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  backdrop-filter: blur(10rpx);
+}
+
+.chart-header {
+  margin-bottom: 20rpx;
+}
+
+.chart-title {
+  color: white;
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.chart-container {
+  width: 100%;
+  height: 400rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.chart-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* 详细统计 */
+.detail-stats {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  backdrop-filter: blur(10rpx);
+}
+
+.detail-header {
+  margin-bottom: 20rpx;
+  border-bottom: 2rpx solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 15rpx;
+}
+
+.detail-title {
+  color: white;
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 15rpx;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detail-label {
+  flex: 1;
+}
+
+.label-text {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 28rpx;
+}
+
+.detail-value {
+  flex: 1;
+  text-align: right;
+}
+
+.value-text {
+  color: white;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+/* 底部操作 */
+.bottom-actions {
+  display: flex;
+  gap: 20rpx;
+  padding: 20rpx 0;
+}
+
+.action-btn {
+  flex: 1;
+  height: 80rpx;
+  border-radius: 40rpx;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10rpx);
+  transition: all 0.3s ease;
+}
+
+.action-btn:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.action-btn.secondary {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-text {
+  color: white;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.container {
+  padding: 40rpx;
+  background: #f7f8fa;
+  min-height: 100vh;
+}
+.picker-bar {
+  margin-bottom: 32rpx;
+  display: flex;
+  align-items: center;
+}
+.picker-bar view {
+  font-size: 32rpx;
+  color: #007AFF;
+  margin-left: 16rpx;
+}
+.card {
+  background: #fff;
+  border-radius: 20rpx;
+  box-shadow: 0 2rpx 12rpx #e0e0e0;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+}
+view {
+  margin-bottom: 16rpx;
+} 

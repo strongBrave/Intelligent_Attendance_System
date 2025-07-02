@@ -1,0 +1,107 @@
+<view class="container">
+  <!-- 页面标题 -->
+  <view class="header">
+    <text class="title">考勤记录</text>
+  </view>
+
+  <!-- 查询条件 -->
+  <view class="query-section">
+    <view class="query-form">
+      <!-- 日期选择 -->
+      <view class="form-item">
+        <text class="label">日期范围</text>
+        <picker mode="date" value="{{startDate}}" start="2020-01-01" end="{{today}}" bindchange="onStartDateChange">
+          <view class="picker">
+            <text class="picker-text">{{startDate || '开始日期'}}</text>
+            <text class="picker-arrow">></text>
+          </view>
+        </picker>
+        <text class="separator">至</text>
+        <picker mode="date" value="{{endDate}}" start="2020-01-01" end="{{today}}" bindchange="onEndDateChange">
+          <view class="picker">
+            <text class="picker-text">{{endDate || '结束日期'}}</text>
+            <text class="picker-arrow">></text>
+          </view>
+        </picker>
+      </view>
+
+      <!-- 快捷日期选择 -->
+      <view class="quick-dates">
+        <text class="quick-label">快捷选择:</text>
+        <view class="quick-buttons">
+          <button class="quick-btn" bindtap="setDateRange" data-range="today">今天</button>
+          <button class="quick-btn" bindtap="setDateRange" data-range="yesterday">昨天</button>
+          <button class="quick-btn" bindtap="setDateRange" data-range="thisWeek">本周</button>
+          <button class="quick-btn" bindtap="setDateRange" data-range="lastWeek">上周</button>
+          <button class="quick-btn" bindtap="setDateRange" data-range="thisMonth">本月</button>
+          <button class="quick-btn" bindtap="setDateRange" data-range="lastMonth">上月</button>
+        </view>
+      </view>
+
+      <!-- 查询按钮 -->
+      <view class="query-actions">
+        <button class="query-btn" bindtap="queryRecords" loading="{{loading}}">查询</button>
+        <button class="reset-btn" bindtap="resetQuery">重置</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 统计信息 -->
+  <view class="stats-section" wx:if="{{stats.total > 0}}">
+    <view class="stats-title">统计信息</view>
+    <view class="stats-grid">
+      <view class="stats-item">
+        <text class="stats-number">{{stats.total}}</text>
+        <text class="stats-label">总记录</text>
+      </view>
+      <view class="stats-item">
+        <text class="stats-number normal">{{stats.normal}}</text>
+        <text class="stats-label">正常</text>
+      </view>
+      <view class="stats-item">
+        <text class="stats-number late">{{stats.late}}</text>
+        <text class="stats-label">迟到</text>
+      </view>
+      <view class="stats-item">
+        <text class="stats-number absent">{{stats.absent}}</text>
+        <text class="stats-label">缺勤</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 考勤记录列表 -->
+  <view class="records-section">
+    <view class="records-header">
+      <text class="records-title">考勤记录 ({{records.length}}条)</text>
+    </view>
+    
+    <view class="records-list" wx:if="{{records.length > 0}}">
+      <view class="record-item" wx:for="{{records}}" wx:key="id">
+        <view class="record-header">
+          <text class="record-date">{{item.date}}</text>
+          <text class="record-status {{item.status}}">{{item.statusText}}</text>
+        </view>
+        <view class="record-content">
+          <view class="record-time">
+            <text class="time-label">签到:</text>
+            <text class="time-value">{{item.sign_in_time || '未签到'}}</text>
+          </view>
+          <view class="record-time">
+            <text class="time-label">签退:</text>
+            <text class="time-value">{{item.sign_out_time || '未签退'}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{!loading && records.length === 0}}">
+      <text class="empty-text">暂无考勤记录</text>
+    </view>
+
+    <!-- 加载状态 -->
+    <view class="loading-state" wx:if="{{loading}}">
+      <text class="loading-text">加载中...</text>
+    </view>
+  </view>
+</view> 

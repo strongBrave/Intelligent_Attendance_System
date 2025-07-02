@@ -1,0 +1,218 @@
+<view class="attendance-container">
+  <!-- 顶部信息栏 -->
+  <view class="header">
+    <view class="user-info">
+      <text class="user-name">{{userInfo.name}}</text>
+      <text class="department">{{userInfo.department}}</text>
+    </view>
+    <view class="time-info">
+      <text class="current-time">{{currentTime}}</text>
+      <text class="current-date">{{today}}</text>
+    </view>
+  </view>
+
+  <!-- 距离状态显示 -->
+  <view class="distance-status" wx:if="{{departmentLocation}}">
+    <view class="status-indicator {{inRange ? 'in-range' : 'out-range'}}">
+      <view class="status-icon">
+        <text class="iconfont {{inRange ? 'icon-success' : 'icon-error'}}"></text>
+      </view>
+      <view class="status-text">
+        <text class="status-message">{{distanceInfo}}</text>
+        <text class="threshold-info">距离阈值: {{distanceThreshold}}米</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 地图显示区域 -->
+  <view class="map-section" wx:if="{{showMap}}">
+    <!-- 搜索功能 -->
+    <view class="search-section">
+      <view class="search-input-group">
+        <input 
+          class="search-input" 
+          placeholder="搜索地点" 
+          value="{{searchKeyword}}"
+          bindinput="onSearchInput"
+          bindconfirm="searchPlace"
+        />
+        <button class="search-btn" bindtap="searchPlace">
+          <text class="iconfont icon-search"></text>
+        </button>
+      </view>
+      
+      <!-- 搜索结果 -->
+      <view class="search-results" wx:if="{{searchResults.length > 0}}">
+        <view 
+          class="search-result-item" 
+          wx:for="{{searchResults}}" 
+          wx:key="id"
+          bindtap="selectSearchResult"
+          data-index="{{index}}"
+        >
+          <view class="result-name">{{item.name}}</view>
+          <view class="result-address">{{item.address}}</view>
+          <view class="result-distance" wx:if="{{item.distance}}">{{item.distance}}米</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="map-container">
+      <map 
+        id="attendance-map"
+        longitude="{{longitude}}"
+        latitude="{{latitude}}"
+        markers="{{markers}}"
+        circles="{{circles}}"
+        scale="15"
+        show-location="true"
+        style="width: 100%; height: 300px;"
+      ></map>
+    </view>
+    <view class="map-controls">
+      <button class="control-btn" bindtap="refreshLocation">
+        <text class="iconfont icon-refresh"></text>
+        刷新位置
+      </button>
+    </view>
+  </view>
+
+  <!-- 地图切换按钮 -->
+  <view class="map-toggle">
+    <button class="toggle-btn" bindtap="toggleMap">
+      <text class="iconfont icon-map"></text>
+      {{showMap ? '隐藏地图' : '显示地图'}}
+    </button>
+  </view>
+
+  <!-- 今日考勤状态 -->
+  <view class="today-status">
+    <view class="status-card">
+      <view class="status-title">今日考勤</view>
+      <view class="status-content">
+        <view class="status-item">
+          <text class="status-label">签到时间:</text>
+          <text class="status-value {{checkInTime ? 'has-time' : 'no-time'}}">
+            {{checkInTime || '未签到'}}
+          </text>
+          <text class="status-badge {{getStatusClass(checkInStatus)}}" wx:if="{{checkInStatus}}">
+            {{checkInStatus}}
+          </text>
+        </view>
+        <view class="status-item">
+          <text class="status-label">签退时间:</text>
+          <text class="status-value {{checkOutTime ? 'has-time' : 'no-time'}}">
+            {{checkOutTime || '未签退'}}
+          </text>
+          <text class="status-badge {{getStatusClass(checkOutStatus)}}" wx:if="{{checkOutStatus}}">
+            {{checkOutStatus}}
+          </text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 打卡按钮区域 -->
+  <view class="attendance-buttons">
+    <!-- 状态提示 -->
+    <view class="status-tip" wx:if="{{statusTip}}">
+      <view class="tip-content {{statusTip.type}}">
+        <text class="iconfont {{statusTip.type === 'error' ? 'icon-error' : 'icon-warning'}}"></text>
+        <text>{{statusTip.message}}</text>
+      </view>
+    </view>
+
+    <!-- 签到按钮 -->
+    <button 
+      class="attendance-btn sign-in-btn {{!checkInTime && inRange === true && isReady ? 'active' : 'disabled'}}"
+      bindtap="onFaceSignIn"
+      disabled="{{!(inRange === true && !checkInTime && isReady)}}"
+      loading="{{loading}}"
+    >
+      <text class="btn-icon">📅</text>
+      <text class="btn-text">签到</text>
+      <text class="btn-time">{{currentTime}}</text>
+    </button>
+
+    <!-- 签退按钮 -->
+    <button 
+      class="attendance-btn sign-out-btn {{checkInTime && !checkOutTime && inRange === true && isReady ? 'active' : 'disabled'}}"
+      bindtap="onFaceSignOut"
+      disabled="{{!(checkInTime && !checkOutTime && inRange === true && isReady)}}"
+      loading="{{loading}}"
+    >
+      <text class="btn-icon">🏠</text>
+      <text class="btn-text">签退</text>
+      <text class="btn-time">{{currentTime}}</text>
+    </button>
+
+    <!-- 调试按钮 -->
+    <button 
+      class="debug-btn"
+      bindtap="debugButtonStatus"
+      style="margin-top: 10px; font-size: 12px; padding: 5px 10px; background: #f0f0f0;"
+    >
+      调试状态
+    </button>
+
+    <!-- 人脸识别打卡按钮 -->
+    <!--
+    <button 
+      class="attendance-btn face-btn {{isReady ? 'active' : 'disabled'}}"
+      bindtap="handleAttendance"
+      disabled="{{!isReady}}"
+      loading="{{isProcessing}}"
+    >
+      <text class="btn-icon">👤</text>
+      <text class="btn-text">{{isProcessing ? processingText : '人脸打卡'}}</text>
+    </button>
+    -->
+  </view>
+
+  <!-- 位置信息 -->
+  <view class="location-info">
+    <view class="location-item">
+      <text class="location-label">当前位置:</text>
+      <text class="location-value">{{location.address || (latitude + ', ' + longitude)}}</text>
+    </view>
+    <view class="location-item" wx:if="{{departmentLocation}}">
+      <text class="location-label">打卡位置:</text>
+      <text class="location-value">{{departmentLocation.address}}</text>
+    </view>
+  </view>
+</view>
+
+<!-- 人脸打卡弹窗 -->
+<view wx:if="{{showFaceModal}}" class="face-modal-mask">
+  <view class="face-modal">
+    <camera 
+      id="faceCamera" 
+      class="face-camera" 
+      device-position="front" 
+      flash="off" 
+      mode="normal" 
+      binderror="onCameraError"
+      style="filter: brightness(1.3) contrast(1.2);"
+    />
+    <view class="circle-mask"></view>
+    <view class="face-modal-header">
+      <text class="face-modal-title">请将人脸对准圆圈</text>
+      <text class="face-modal-timer">{{faceCheckTimer}}s</text>
+    </view>
+    <view class="face-modal-footer">
+      <button class="face-modal-exit" bindtap="onFaceModalExit">退出</button>
+    </view>
+    <view class="face-modal-tip" wx:if="faceCheckStatus === 'fail'">
+      <text class="fail-text">打卡失败，请重试</text>
+    </view>
+    <view class="face-modal-tip" wx:if="faceCheckStatus === 'timeout'">
+      <text class="timeout-text">打卡超时，请重试</text>
+    </view>
+    <view class="face-modal-tip" wx:if="faceCheckStatus === 'success'">
+      <text class="success-text">打卡成功！</text>
+    </view>
+    <view class="face-modal-tip" wx:if="faceCheckStatus === 'pending'">
+      <text class="pending-text">正在检测人脸，请保持不动...</text>
+    </view>
+  </view>
+</view> 

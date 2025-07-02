@@ -1,0 +1,131 @@
+<view class="department-container">
+  <!-- 顶部操作栏 -->
+  <view class="header">
+    <text class="title">部门管理</text>
+    <button class="add-btn" bindtap="showAddDialog">新增部门</button>
+  </view>
+
+  <!-- 部门列表 -->
+  <view class="department-list">
+    <view class="department-item" wx:for="{{departments}}" wx:key="id">
+      <view class="dept-info">
+        <view class="dept-name">{{item.name}}</view>
+        <view class="dept-details">
+          <text class="detail-item">签到: {{item.sign_in_time}}</text>
+          <text class="detail-item">签退: {{item.sign_out_time}}</text>
+          <text class="detail-item">员工: {{item.user_count}}人</text>
+        </view>
+        <view class="dept-location" wx:if="{{item.location}}">
+          <text class="location-text">📍 {{item.location}}</text>
+        </view>
+      </view>
+      <view class="dept-actions">
+        <button class="action-btn edit" bindtap="editDepartment" data-dept="{{item}}">编辑</button>
+        <button class="action-btn delete" bindtap="deleteDepartment" data-dept="{{item}}" wx:if="{{item.user_count === 0}}">删除</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{departments.length === 0 && !loading}}">
+    <text class="empty-text">暂无部门数据</text>
+  </view>
+
+  <!-- 新增/编辑部门弹窗 -->
+  <view class="modal-overlay" wx:if="{{showModal}}" bindtap="hideModal">
+    <view class="modal-content" catchtap="stopPropagation">
+      <view class="modal-header">
+        <text class="modal-title">{{isEdit ? '编辑部门' : '新增部门'}}</text>
+        <text class="modal-close" bindtap="hideModal">×</text>
+      </view>
+
+      <form class="form" bindsubmit="submitForm">
+        <!-- 部门名称 -->
+        <view class="form-item">
+          <text class="form-label">部门名称</text>
+          <input class="form-input" name="name" value="{{form.name}}" placeholder="请输入部门名称" maxlength="50" />
+        </view>
+
+        <!-- 签到时间 -->
+        <view class="form-item">
+          <text class="form-label">签到时间</text>
+          <picker mode="time" name="sign_in_time" value="{{form.sign_in_time}}" bindchange="onTimeChange" data-type="sign_in_time">
+            <view class="picker-input">
+              <text class="picker-text">{{form.sign_in_time}}</text>
+              <text class="picker-arrow">▼</text>
+            </view>
+          </picker>
+        </view>
+
+        <!-- 签退时间 -->
+        <view class="form-item">
+          <text class="form-label">签退时间</text>
+          <picker mode="time" name="sign_out_time" value="{{form.sign_out_time}}" bindchange="onTimeChange" data-type="sign_out_time">
+            <view class="picker-input">
+              <text class="picker-text">{{form.sign_out_time}}</text>
+              <text class="picker-arrow">▼</text>
+            </view>
+          </picker>
+        </view>
+
+        <!-- 迟到阈值 -->
+        <view class="form-item">
+          <text class="form-label">迟到阈值</text>
+          <picker mode="time" name="late_threshold" value="{{form.late_threshold}}" bindchange="onTimeChange" data-type="late_threshold">
+            <view class="picker-input">
+              <text class="picker-text">{{form.late_threshold}}</text>
+              <text class="picker-arrow">▼</text>
+            </view>
+          </picker>
+        </view>
+
+        <!-- 缺勤阈值 -->
+        <view class="form-item">
+          <text class="form-label">缺勤阈值</text>
+          <picker mode="time" name="absent_threshold" value="{{form.absent_threshold}}" bindchange="onTimeChange" data-type="absent_threshold">
+            <view class="picker-input">
+              <text class="picker-text">{{form.absent_threshold}}</text>
+              <text class="picker-arrow">▼</text>
+            </view>
+          </picker>
+        </view>
+
+        <!-- 早退阈值 -->
+        <view class="form-item">
+          <text class="form-label">早退阈值</text>
+          <picker mode="time" name="early_leave_threshold" value="{{form.early_leave_threshold}}" bindchange="onTimeChange" data-type="early_leave_threshold">
+            <view class="picker-input">
+              <text class="picker-text">{{form.early_leave_threshold}}</text>
+              <text class="picker-arrow">▼</text>
+            </view>
+          </picker>
+        </view>
+
+        <!-- 打卡位置 -->
+        <view class="form-item">
+          <text class="form-label">打卡位置</text>
+          <view class="location-input">
+            <input class="form-input" value="{{form.location}}" placeholder="请选择打卡位置" disabled />
+            <button class="location-btn" bindtap="chooseLocation" type="button">地图选点</button>
+          </view>
+          <view class="location-preview" wx:if="{{form.location}}">
+            <text class="location-text">📍 {{form.location}}</text>
+          </view>
+        </view>
+
+        <!-- 表单按钮 -->
+        <view class="form-actions">
+          <button class="form-btn cancel" bindtap="hideModal" type="button">取消</button>
+          <button class="form-btn submit" formType="submit" loading="{{submitting}}">
+            {{isEdit ? '更新' : '添加'}}
+          </button>
+        </view>
+      </form>
+    </view>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading" wx:if="{{loading}}">
+    <text class="loading-text">加载中...</text>
+  </view>
+</view> 
