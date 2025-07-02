@@ -467,7 +467,7 @@ def verify_face():
                     max_similarity = max(max_similarity, similarity)
                 
                 # 删除临时文件
-                # os.remove(filepath)
+                os.remove(filepath)
                 
                 if max_similarity >= 0.6:
                     return jsonify({
@@ -482,7 +482,7 @@ def verify_face():
                         'message': f'人脸验证失败，相似度: {max_similarity:.4f}'
                     })
             else:
-                # os.remove(filepath)
+                os.remove(filepath)
                 return jsonify({
                     'success': False,
                     'message': '用户未注册人脸信息'
