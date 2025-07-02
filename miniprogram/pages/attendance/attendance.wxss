@@ -508,38 +508,103 @@
   }
 }
 
+/* 人脸打卡弹窗样式 */
 .face-modal-mask {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.7);
+  background: rgba(0,0,0,0.3);
   z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+}
+
+/* 彩色闪烁背景 */
+.colorful-background {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 1;
+}
+
+.color-dot {
+  position: absolute;
+  width: 200rpx;
+  height: 200rpx;
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: colorPulse 3s ease-in-out infinite;
+}
+
+.dot1 {
+  top: 10%;
+  left: 10%;
+  background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+  animation-delay: 0s;
+}
+
+.dot2 {
+  top: 20%;
+  right: 15%;
+  background: linear-gradient(45deg, #4ecdc4, #6ee7df);
+  animation-delay: 0.5s;
+}
+
+.dot3 {
+  bottom: 30%;
+  left: 20%;
+  background: linear-gradient(45deg, #45b7d1, #67c9e1);
+  animation-delay: 1s;
+}
+
+.dot4 {
+  bottom: 20%;
+  right: 10%;
+  background: linear-gradient(45deg, #96ceb4, #b8e0c8);
+  animation-delay: 1.5s;
+}
+
+.dot5 {
+  top: 50%;
+  left: 5%;
+  background: linear-gradient(45deg, #feca57, #ffd976);
+  animation-delay: 2s;
+}
+
+.dot6 {
+  top: 60%;
+  right: 5%;
+  background: linear-gradient(45deg, #ff9ff3, #ffb3f3);
+  animation-delay: 2.5s;
 }
 
 .face-modal {
   position: relative;
   width: 90vw;
   height: 90vw;
-  max-width: 600rpx;
-  max-height: 600rpx;
+  max-width: 650rpx;
+  max-height: 650rpx;
   background: transparent;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  border-radius: 20rpx;
+  overflow: hidden;
+  z-index: 10;
 }
 
 .face-camera {
   width: 90vw;
   height: 90vw;
-  max-width: 600rpx;
-  max-height: 600rpx;
+  max-width: 650rpx;
+  max-height: 650rpx;
   border-radius: 50%;
   overflow: hidden;
   position: absolute;
   top: 0; left: 0;
+  box-shadow: 0 0 60rpx rgba(255,255,255,0.4);
+  border: 6rpx solid rgba(255,255,255,0.8);
 }
 
 .circle-mask {
@@ -548,80 +613,256 @@
   margin: auto;
   width: 90vw;
   height: 90vw;
-  max-width: 600rpx;
-  max-height: 600rpx;
+  max-width: 650rpx;
+  max-height: 650rpx;
   border-radius: 50%;
-  box-shadow: 0 0 0 9999px rgba(0,0,0,0.7);
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.4);
   pointer-events: none;
+  border: 4rpx solid rgba(255,255,255,0.5);
 }
 
+/* 顶部状态栏 */
 .face-modal-header {
   position: absolute;
-  top: 20rpx;
+  top: 40rpx;
   left: 0; right: 0;
-  text-align: center;
-  z-index: 2;
+  z-index: 15;
+}
+
+.header-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20rpx;
 }
 
 .face-modal-title {
   color: #fff;
-  font-size: 32rpx;
-  font-weight: bold;
-  margin-bottom: 10rpx;
+  font-size: 36rpx;
+  font-weight: 600;
+  text-shadow: 0 2rpx 8rpx rgba(0,0,0,0.8);
+  letter-spacing: 2rpx;
+}
+
+.timer-container {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  background: rgba(255,255,255,0.2);
+  padding: 12rpx 24rpx;
+  border-radius: 30rpx;
+  backdrop-filter: blur(10rpx);
+  border: 2rpx solid rgba(255,255,255,0.3);
+}
+
+.timer-icon {
+  font-size: 28rpx;
+  color: #fff;
 }
 
 .face-modal-timer {
   color: #fff;
-  font-size: 28rpx;
-  margin-left: 20rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
 }
 
-.face-modal-footer {
+/* 状态提示区域 */
+.face-modal-status {
   position: absolute;
-  bottom: 30rpx;
-  left: 0; right: 0;
-  text-align: center;
-  z-index: 2;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  animation: statusFadeIn 0.5s ease-out;
 }
 
-.face-modal-exit {
-  background: rgba(255,255,255,0.8);
-  color: #333;
-  border: none;
-  border-radius: 30rpx;
-  padding: 16rpx 48rpx;
-  font-size: 28rpx;
-  font-weight: bold;
+.status-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20rpx;
+  background: rgba(255,255,255,0.95);
+  padding: 40rpx 60rpx;
+  border-radius: 20rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0,0,0,0.3);
+  backdrop-filter: blur(10rpx);
+  min-width: 300rpx;
 }
 
-.face-modal-tip {
-  position: absolute;
-  bottom: 100rpx;
-  left: 0; right: 0;
-  text-align: center;
-  z-index: 2;
+.status-container.success {
+  border: 3rpx solid #52c41a;
 }
 
-.fail-text {
+.status-container.fail {
+  border: 3rpx solid #ff4d4f;
+}
+
+.status-container.timeout {
+  border: 3rpx solid #faad14;
+}
+
+.status-icon {
+  font-size: 80rpx;
+  line-height: 1;
+}
+
+.icon-success {
+  color: #52c41a;
+}
+
+.icon-error {
   color: #ff4d4f;
-  font-size: 32rpx;
-  font-weight: bold;
 }
 
-.timeout-text {
+.icon-timeout {
   color: #faad14;
+}
+
+.status-text {
   font-size: 32rpx;
-  font-weight: bold;
+  font-weight: 600;
+  text-align: center;
 }
 
 .success-text {
   color: #52c41a;
-  font-size: 32rpx;
+}
+
+.fail-text {
+  color: #ff4d4f;
+}
+
+.timeout-text {
+  color: #faad14;
+}
+
+/* 底部操作 */
+.face-modal-footer {
+  position: absolute;
+  bottom: 40rpx;
+  left: 0; right: 0;
+  z-index: 15;
+  display: flex;
+  justify-content: center;
+}
+
+.face-modal-exit {
+  background: rgba(255,255,255,0.9);
+  color: #333;
+  border: none;
+  border-radius: 40rpx;
+  padding: 20rpx 40rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+}
+
+.face-modal-exit:active {
+  transform: scale(0.95);
+  background: rgba(255,255,255,1);
+}
+
+.exit-icon {
+  font-size: 24rpx;
   font-weight: bold;
 }
 
-.pending-text {
-  color: #1890ff;
-  font-size: 32rpx;
-  font-weight: bold;
+.exit-text {
+  font-size: 28rpx;
+}
+
+/* 引导提示 */
+.face-modal-guide {
+  position: absolute;
+  bottom: 120rpx;
+  left: 0; right: 0;
+  z-index: 15;
+  pointer-events: none;
+}
+
+.guide-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.guide-text {
+  color: rgba(255,255,255,0.9);
+  font-size: 28rpx;
+  font-weight: 500;
+  text-align: center;
+  text-shadow: 0 2rpx 8rpx rgba(0,0,0,0.8);
+  background: rgba(0,0,0,0.3);
+  padding: 12rpx 24rpx;
+  border-radius: 20rpx;
+  backdrop-filter: blur(10rpx);
+}
+
+/* 动画效果 */
+@keyframes statusFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes colorPulse {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 0.6;
+  }
+  25% {
+    transform: scale(1.1) rotate(90deg);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(0.9) rotate(180deg);
+    opacity: 0.4;
+  }
+  75% {
+    transform: scale(1.05) rotate(270deg);
+    opacity: 0.7;
+  }
+}
+
+/* 响应式适配 */
+@media (max-width: 750rpx) {
+  .face-modal {
+    width: 95vw;
+    height: 95vw;
+    max-width: 600rpx;
+    max-height: 600rpx;
+  }
+  
+  .face-camera {
+    width: 95vw;
+    height: 95vw;
+    max-width: 600rpx;
+    max-height: 600rpx;
+  }
+  
+  .circle-mask {
+    width: 95vw;
+    height: 95vw;
+    max-width: 600rpx;
+    max-height: 600rpx;
+  }
+  
+  .face-modal-title {
+    font-size: 32rpx;
+  }
+  
+  .guide-text {
+    font-size: 24rpx;
+  }
 } 

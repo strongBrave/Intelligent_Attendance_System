@@ -184,7 +184,18 @@
 
 <!-- 人脸打卡弹窗 -->
 <view wx:if="{{showFaceModal}}" class="face-modal-mask">
+  <!-- 彩色闪烁背景 -->
+  <view class="colorful-background">
+    <view class="color-dot dot1"></view>
+    <view class="color-dot dot2"></view>
+    <view class="color-dot dot3"></view>
+    <view class="color-dot dot4"></view>
+    <view class="color-dot dot5"></view>
+    <view class="color-dot dot6"></view>
+  </view>
+  
   <view class="face-modal">
+    <!-- 摄像头区域 -->
     <camera 
       id="faceCamera" 
       class="face-camera" 
@@ -194,25 +205,50 @@
       binderror="onCameraError"
       style="filter: brightness(1.3) contrast(1.2);"
     />
+    
+    <!-- 圆形遮罩 -->
     <view class="circle-mask"></view>
+    
+    <!-- 顶部状态栏 -->
     <view class="face-modal-header">
-      <text class="face-modal-title">请将人脸对准圆圈</text>
-      <text class="face-modal-timer">{{faceCheckTimer}}s</text>
+      <view class="header-content">
+        <text class="face-modal-title">人脸识别</text>
+        <view class="timer-container">
+          <text class="timer-icon">⏱</text>
+          <text class="face-modal-timer">{{faceCheckTimer}}s</text>
+        </view>
+      </view>
     </view>
+    
+    <!-- 状态提示区域 - 只在非pending状态显示 -->
+    <view class="face-modal-status" wx:if="{{faceCheckStatus !== 'pending'}}">
+      <view class="status-container {{faceCheckStatus}}">
+        <view class="status-icon">
+          <text wx:if="{{faceCheckStatus === 'success'}}" class="icon-success">✓</text>
+          <text wx:elif="{{faceCheckStatus === 'fail'}}" class="icon-error">✗</text>
+          <text wx:elif="{{faceCheckStatus === 'timeout'}}" class="icon-timeout">⏰</text>
+        </view>
+        <text class="status-text">
+          <text wx:if="{{faceCheckStatus === 'success'}}" class="success-text">打卡成功！</text>
+          <text wx:elif="{{faceCheckStatus === 'fail'}}" class="fail-text">识别失败，请重试</text>
+          <text wx:elif="{{faceCheckStatus === 'timeout'}}" class="timeout-text">识别超时，请重试</text>
+        </text>
+      </view>
+    </view>
+    
+    <!-- 底部操作 -->
     <view class="face-modal-footer">
-      <button class="face-modal-exit" bindtap="onFaceModalExit">退出</button>
+      <button class="face-modal-exit" bindtap="onFaceModalExit">
+        <text class="exit-icon">✕</text>
+        <text class="exit-text">退出</text>
+      </button>
     </view>
-    <view class="face-modal-tip" wx:if="faceCheckStatus === 'fail'">
-      <text class="fail-text">打卡失败，请重试</text>
-    </view>
-    <view class="face-modal-tip" wx:if="faceCheckStatus === 'timeout'">
-      <text class="timeout-text">打卡超时，请重试</text>
-    </view>
-    <view class="face-modal-tip" wx:if="faceCheckStatus === 'success'">
-      <text class="success-text">打卡成功！</text>
-    </view>
-    <view class="face-modal-tip" wx:if="faceCheckStatus === 'pending'">
-      <text class="pending-text">正在检测人脸，请保持不动...</text>
+    
+    <!-- 简单的引导提示 - 只在pending状态显示 -->
+    <view class="face-modal-guide" wx:if="{{faceCheckStatus === 'pending'}}">
+      <view class="guide-content">
+        <text class="guide-text">请将脸部对准圆圈中心</text>
+      </view>
     </view>
   </view>
 </view> 
