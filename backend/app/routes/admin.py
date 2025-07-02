@@ -4,6 +4,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta
 import re
+from ..utils import format_location_display
 
 bp = Blueprint('admin', __name__)
 
@@ -388,6 +389,9 @@ def get_attendance_records():
     
     records = []
     for record in pagination.items:
+        # 格式化位置信息
+        formatted_location = format_location_display(record.location)
+        
         record_data = {
             'id': record.id,
             'user_id': record.user_id,
@@ -397,7 +401,7 @@ def get_attendance_records():
             'check_type': record.check_type,
             'status': record.status,
             'time': record.time.strftime('%Y-%m-%d %H:%M:%S') if record.time else None,
-            'location': record.location
+            'location': formatted_location
         }
         records.append(record_data)
     
@@ -736,7 +740,7 @@ def get_department_attendance_detail(department_id):
             'name': user.name,
             'phone': user.phone,
             'time': attendance.time.strftime('%Y-%m-%d %H:%M:%S') if attendance.time else None,
-            'location': attendance.location,
+            'location': format_location_display(attendance.location),
             'status': attendance.status,
             'check_type': attendance.check_type
         }

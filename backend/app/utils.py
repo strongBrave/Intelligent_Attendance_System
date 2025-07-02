@@ -1,6 +1,7 @@
 import math
 import re
 from datetime import datetime
+import requests
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     """
@@ -136,3 +137,48 @@ def parse_time(time_str):
     except Exception as e:
         print(f"时间解析错误: {e}")
         return None 
+    
+def format_location_display(location_str):
+    """格式化位置显示，遇到纯经纬度时自动调用Nominatim API获取详细地址"""
+    if not location_str:
+        return '未知位置'
+    # 如果已经是格式化的地址（包含括号），直接返回
+    if ' (' in location_str and location_str.endswith(')'):
+        return location_str
+    # 如果是纯经纬度格式，尝试转换为地址
+    if ',' in location_str and '(' not in location_str:
+        try:
+            coords = location_str.split(',')
+            if len(coords) == 2:
+                lat = float(coords[0].strip())
+                lng = float(coords[1].strip())
+                # 调用Nominatim API获取详细地址
+                address = get_address_from_coords(lat, lng)
+                return f"{lat:.2f}, {lng:.2f} ({address})"
+        except:
+            pass
+    return location_str
+
+def get_address_from_coords(lat, lng):
+    """调用OpenStreetMap Nominatim API获取详细地址"""
+    try:
+        url = "https://nominatim.openstreetmap.org/reverse"
+        params = {
+            "format": "json",
+            "lat": lat,
+            "lon": lng,
+            "zoom": 18,
+            "addressdetails": 1
+        }
+        headers = {
+            "User-Agent": "AttendanceApp/1.0"
+        }
+        resp = requests.get(url, params=params, headers=headers, timeout=3)
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("display_name"):
+                return data["display_name"]
+        return "未知地址"
+    except Exception as e:
+        print("逆地理编码失败:", e)
+        return "未知地址"
