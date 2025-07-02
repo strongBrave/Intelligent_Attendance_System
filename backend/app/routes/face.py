@@ -60,7 +60,7 @@ def register_face():
         
         # 提取人脸特征
         
-        features = face_service.extract_face_features(filepath)
+        features, _ = face_service.extract_face_features(filepath)
         if features is None:
             # 删除保存的图片
             os.remove(filepath)
@@ -142,7 +142,7 @@ def register_multiple_faces():
         # 提取多张图片的特征向量
         features_list = []
         for image_data in image_data_list:
-            features = face_service.extract_face_features(image_data)
+            features, _ = face_service.extract_face_features(image_data)
             if features is not None:
                 features_list.append(features)
         
@@ -317,7 +317,7 @@ def update_face(user_id):
         # 提取多张图片的特征向量
         features_list = []
         for image_data in image_data_list:
-            features = face_service.extract_face_features(image_data)
+            features, _ = face_service.extract_face_features(image_data)
             if features is not None:
                 features_list.append(features)
         

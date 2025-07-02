@@ -51,6 +51,13 @@ Page({
     faceCheckStatus: 'pending', // pending/success/fail
     faceCheckTimer: 0, // 秒数
     faceCheckInterval: null,
+    
+    // 人脸检测相关
+    faceDetectionCanvas: null,
+    faceBoxes: [], // 检测到的人脸框
+    isDetecting: false, // 是否正在检测
+    detectionInterval: null, // 检测定时器
+    isVerifying: false, // 是否正在验证
   },
 
   onLoad() {
@@ -972,80 +979,147 @@ Page({
 
   // 开始人脸检测
   startFaceCheck() {
-    const cameraContext = wx.createCameraContext()
-    let timer = 0
-    this.setData({ 
-      faceCheckTimer: 0,
-      faceCheckStatus: 'pending'
+    console.log('[调试] 开始人脸检测')
+    
+    this.setData({
+      showFaceModal: true,
+      faceCheckStatus: 'pending',
+      faceCheckTimer: 0
     })
     
-    // 设置30秒超时
+    // 初始化人脸检测Canvas
+    setTimeout(() => {
+      this.initFaceDetectionCanvas()
+      // 延迟启动人脸检测
+      setTimeout(() => {
+        this.startFaceDetection()
+      }, 500)
+    }, 100)
+    
+    // 启动倒计时
     this.faceCheckInterval = setInterval(() => {
-      timer++
-      this.setData({ faceCheckTimer: timer })
-      
-      // 每1秒拍照一次
-      this.takePhotoAndCheck(cameraContext)
+      this.setData({
+        faceCheckTimer: this.data.faceCheckTimer + 1
+      })
       
       // 30秒超时
-      if (timer >= 30) {
+      if (this.data.faceCheckTimer >= 30) {
         this.endFaceCheck('timeout')
       }
+    }, 1000)
+    
+    // 延迟开始拍照检测
+    setTimeout(() => {
+      this.takePhotoAndCheck()
     }, 1000)
   },
 
   // 拍照并上传
-  takePhotoAndCheck(cameraContext) {
+  takePhotoAndCheck() {
+    const cameraContext = wx.createCameraContext()
     cameraContext.takePhoto({
       quality: 'high', // 提高图片质量
       success: (res) => {
-        // 先进行人脸验证
-        const token = wx.getStorageSync('token')
-        const verifyUrl = `${app.globalData.baseUrl}/api/attendance/verify_face`
-        
-        console.log('[调试] 开始人脸验证:', verifyUrl)
-        console.log('[调试] 检查类型:', this.data.checkType)
-        console.log('[调试] 当前尝试次数:', this.data.faceCheckTimer)
-        
-        wx.uploadFile({
-          url: verifyUrl,
-          filePath: res.tempImagePath,
-          name: 'face_image',
-          header: {
-            'Authorization': `Bearer ${token}`
-          },
-          success: (verifyRes) => {
-            console.log('[调试] 人脸验证响应:', verifyRes)
-            let verifyResult = {}
-            try {
-              verifyResult = JSON.parse(verifyRes.data)
-              console.log('[调试] 人脸验证结果:', verifyResult)
-            } catch (e) {
-              console.error('[调试] 解析人脸验证响应失败:', e)
-              return
-            }
-            
-            // 如果人脸验证成功，进行实际打卡
-            if (verifyRes.statusCode === 200 && verifyResult.success) {
-              console.log('[调试] 人脸验证成功，开始打卡')
-              this.performAttendance(res.tempImagePath)
-            } else {
-              console.log('[调试] 人脸验证失败:', verifyResult.message)
-              // 继续尝试下一次拍照
-              console.log('[调试] 继续尝试下一次拍照...')
-            }
-          },
-          fail: (error) => {
-            console.error('[调试] 人脸验证上传失败:', error)
-            // 继续尝试下一次拍照
-            console.log('[调试] 人脸验证失败，继续尝试下一次拍照...')
-          },
-        })
+        // 同时进行人脸检测和验证
+        this.detectFacesAndVerify(res.tempImagePath)
       },
       fail: (error) => {
         console.error('[调试] 拍照失败:', error)
         // 继续尝试下一次拍照
         console.log('[调试] 拍照失败，继续尝试下一次拍照...')
+      },
+    })
+  },
+
+  // 检测人脸并验证（用于打卡验证）
+  async detectFacesAndVerify(imagePath) {
+    try {
+      const token = wx.getStorageSync('token')
+      
+      // 先进行人脸检测
+      wx.uploadFile({
+        url: `${app.globalData.baseUrl}/api/attendance/detect_faces`,
+        filePath: imagePath,
+        name: 'face_image',
+        header: {
+          'Authorization': `Bearer ${token}`
+        },
+        success: (detectRes) => {
+          const detectData = JSON.parse(detectRes.data)
+          if (detectData.success && detectData.face_boxes && detectData.face_boxes.length > 0) {
+            // 绘制人脸检测框
+            this.drawFaceBoxes(
+              detectData.face_boxes, 
+              detectData.image_width, 
+              detectData.image_height
+            )
+            
+            // 延迟一下再验证，让用户看到检测框
+            setTimeout(() => {
+              this.verifyFace(imagePath)
+            }, 500)
+          } else {
+            console.log('[调试] 未检测到人脸')
+            // 继续尝试下一次拍照
+            setTimeout(() => {
+              this.takePhotoAndCheck()
+            }, 1000)
+          }
+        },
+        fail: (err) => {
+          console.error('[调试] 人脸检测请求失败:', err)
+          // 直接进行验证
+          this.verifyFace(imagePath)
+        }
+      })
+    } catch (error) {
+      console.error('[调试] 人脸检测失败:', error)
+      // 直接进行验证
+      this.verifyFace(imagePath)
+    }
+  },
+
+  // 验证人脸
+  verifyFace(imagePath) {
+    const token = wx.getStorageSync('token')
+    const verifyUrl = `${app.globalData.baseUrl}/api/attendance/verify_face`
+    
+    console.log('[调试] 开始人脸验证:', verifyUrl)
+    console.log('[调试] 检查类型:', this.data.checkType)
+    console.log('[调试] 当前尝试次数:', this.data.faceCheckTimer)
+    
+    wx.uploadFile({
+      url: verifyUrl,
+      filePath: imagePath,
+      name: 'face_image',
+      header: {
+        'Authorization': `Bearer ${token}`
+      },
+      success: (verifyRes) => {
+        console.log('[调试] 人脸验证响应:', verifyRes)
+        let verifyResult = {}
+        try {
+          verifyResult = JSON.parse(verifyRes.data)
+          console.log('[调试] 人脸验证结果:', verifyResult)
+        } catch (e) {
+          console.error('[调试] 解析人脸验证响应失败:', e)
+          return
+        }
+        
+        // 如果人脸验证成功，进行实际打卡
+        if (verifyRes.statusCode === 200 && verifyResult.success) {
+          console.log('[调试] 人脸验证成功，开始打卡')
+          this.performAttendance(imagePath)
+        } else {
+          console.log('[调试] 人脸验证失败:', verifyResult.message)
+          // 继续尝试下一次拍照
+          console.log('[调试] 继续尝试下一次拍照...')
+        }
+      },
+      fail: (error) => {
+        console.error('[调试] 人脸验证上传失败:', error)
+        // 继续尝试下一次拍照
+        console.log('[调试] 人脸验证失败，继续尝试下一次拍照...')
       },
     })
   },
@@ -1105,7 +1179,8 @@ Page({
           this.endFaceCheck('success')
         } else {
           console.log('[调试] 打卡失败，响应:', result)
-          // 打卡失败，继续尝试
+          // 打卡失败，重置验证状态，继续尝试
+          this.setData({ isVerifying: false })
           console.log('[调试] 打卡失败，继续尝试下一次拍照...')
         }
       },
@@ -1121,6 +1196,12 @@ Page({
   endFaceCheck(status) {
     clearInterval(this.faceCheckInterval)
     this.faceCheckInterval = null
+    
+    // 停止人脸检测
+    this.stopFaceDetection()
+    
+    // 重置验证状态
+    this.setData({ isVerifying: false })
     
     if (status === 'success') {
       this.setData({ faceCheckStatus: 'success' })
@@ -1160,6 +1241,8 @@ Page({
 
   // 弹窗退出按钮
   onFaceModalExit() {
+    // 停止人脸检测
+    this.stopFaceDetection()
     this.endFaceCheck('fail')
   },
 
@@ -1234,5 +1317,356 @@ Page({
     console.log('[按钮状态] 签退按钮可用:', canSignOut)
     
     return { canSignIn, canSignOut }
-  }
+  },
+
+  // 初始化人脸检测Canvas
+  initFaceDetectionCanvas() {
+    const query = wx.createSelectorQuery()
+    query.select('#faceDetectionCanvas')
+      .fields({ node: true, size: true })
+      .exec((res) => {
+        console.log('[调试] Canvas查询结果:', res)
+        if (res[0] && res[0].node) {
+          const canvas = res[0].node
+          const ctx = canvas.getContext('2d')
+          
+          // 设置canvas尺寸
+          const dpr = wx.getSystemInfoSync().pixelRatio
+          canvas.width = res[0].width * dpr
+          canvas.height = res[0].height * dpr
+          ctx.scale(dpr, dpr)
+          
+          this.setData({
+            faceDetectionCanvas: canvas
+          })
+          
+          console.log('[调试] 人脸检测Canvas初始化完成')
+        } else {
+          console.error('[调试] Canvas初始化失败，res[0]:', res[0])
+          // 使用传统方式初始化Canvas
+          this.initCanvasWithContext()
+        }
+      })
+  },
+
+  // 使用传统方式初始化Canvas
+  initCanvasWithContext() {
+    const ctx = wx.createCanvasContext('faceDetectionCanvas', this)
+    this.setData({
+      faceDetectionCanvas: ctx
+    })
+    console.log('[调试] 使用传统方式初始化Canvas完成')
+  },
+
+  // 开始人脸检测
+  startFaceDetection() {
+    if (this.data.isDetecting) return
+    
+    this.setData({ isDetecting: true })
+    
+    // 启用实时检测，每1.5秒检测一次
+    this.data.detectionInterval = setInterval(() => {
+      this.detectFaces()
+    }, 1500)
+    
+    console.log('[调试] 开始实时人脸检测')
+  },
+
+  // 停止人脸检测
+  stopFaceDetection() {
+    if (this.data.detectionInterval) {
+      clearInterval(this.data.detectionInterval)
+      this.data.detectionInterval = null
+    }
+    
+    this.setData({ 
+      isDetecting: false,
+      faceBoxes: []
+    })
+    
+    // 清除canvas
+    this.clearFaceDetectionCanvas()
+    
+    console.log('[调试] 停止人脸检测')
+  },
+
+  // 检测人脸（仅用于显示检测框）
+  async detectFaces() {
+    try {
+      const cameraContext = wx.createCameraContext()
+      
+      cameraContext.takePhoto({
+        quality: 'low', // 使用低质量图片以提高速度
+        success: (res) => {
+          this.uploadImageForDetection(res.tempImagePath)
+        },
+        fail: (err) => {
+          console.error('[调试] 拍照失败:', err)
+        }
+      })
+    } catch (error) {
+      console.error('[调试] 人脸检测失败:', error)
+    }
+  },
+
+  // 上传图片进行人脸检测（实时检测+验证）
+  async uploadImageForDetection(imagePath) {
+    try {
+      const token = wx.getStorageSync('token')
+      if (!token) {
+        console.error('[调试] 未找到token')
+        return
+      }
+
+      // 先进行人脸检测
+      wx.uploadFile({
+        url: `${app.globalData.baseUrl}/api/attendance/detect_faces`,
+        filePath: imagePath,
+        name: 'face_image',
+        header: {
+          'Authorization': `Bearer ${token}`
+        },
+        success: (detectRes) => {
+          const detectData = JSON.parse(detectRes.data)
+          if (detectData.success) {
+            this.setData({
+              faceBoxes: detectData.face_boxes || []
+            })
+            // 绘制检测框
+            this.drawFaceBoxes(
+              detectData.face_boxes || [], 
+              detectData.image_width, 
+              detectData.image_height
+            )
+            
+            // 如果检测到人脸，进行相似度验证
+            if (detectData.face_boxes && detectData.face_boxes.length > 0) {
+              this.verifyFaceForRealTime(imagePath)
+            }
+          }
+        },
+        fail: (err) => {
+          console.error('[调试] 人脸检测请求失败:', err)
+        }
+      })
+    } catch (error) {
+      console.error('[调试] 上传图片失败:', error)
+    }
+  },
+
+  // 绘制人脸检测框
+  drawFaceBoxes(faceBoxes, imageWidth = 0, imageHeight = 0) {
+    const canvas = this.data.faceDetectionCanvas
+    if (!canvas) return
+    
+    console.log('[调试] 绘制人脸框，图片尺寸:', { width: imageWidth, height: imageHeight })
+    
+    // 检查是否是传统Canvas上下文
+    if (canvas.setFillStyle) {
+      // 传统Canvas API
+      this.drawFaceBoxesLegacy(canvas, faceBoxes, imageWidth, imageHeight)
+    } else {
+      // 新Canvas API
+      this.drawFaceBoxesModern(canvas, faceBoxes, imageWidth, imageHeight)
+    }
+  },
+
+  // 使用传统Canvas API绘制人脸框
+  drawFaceBoxesLegacy(ctx, faceBoxes, imageWidth, imageHeight) {
+    // 获取Canvas实际尺寸
+    const query = wx.createSelectorQuery()
+    query.select('#faceDetectionCanvas')
+      .boundingClientRect((rect) => {
+        if (!rect) {
+          console.error('[调试] 无法获取Canvas尺寸')
+          return
+        }
+        
+        const canvasWidth = rect.width
+        const canvasHeight = rect.height
+        
+        console.log('[调试] Canvas尺寸:', { width: canvasWidth, height: canvasHeight })
+        console.log('[调试] 人脸框数据:', faceBoxes)
+        
+        // 清除canvas
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+        
+        // 绘制检测到的人脸框
+        faceBoxes.forEach((faceBox, index) => {
+          const box = faceBox.box
+          const confidence = faceBox.confidence
+          
+          console.log('[调试] 原始人脸框坐标:', box)
+          
+          // 使用实际图片尺寸进行坐标转换
+          let scaleX, scaleY
+          if (imageWidth > 0 && imageHeight > 0) {
+            scaleX = canvasWidth / imageWidth
+            scaleY = canvasHeight / imageHeight
+          } else {
+            // 如果没有图片尺寸信息，使用Canvas尺寸作为基准
+            scaleX = canvasWidth / 640
+            scaleY = canvasHeight / 480
+          }
+          
+          // 计算在canvas上的坐标
+          const x = box[0] * scaleX
+          const y = box[1] * scaleY
+          const width = (box[2] - box[0]) * scaleX
+          const height = (box[3] - box[1]) * scaleY
+          
+          console.log('[调试] 转换后坐标:', { x, y, width, height, scaleX, scaleY })
+          
+          // 绘制边框
+          ctx.setStrokeStyle(confidence > 0.8 ? '#00ff00' : '#ffff00')
+          ctx.setLineWidth(3)
+          ctx.strokeRect(x, y, width, height)
+          
+          // 绘制背景
+          ctx.setFillStyle(confidence > 0.8 ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 255, 0, 0.1)')
+          ctx.fillRect(x, y, width, height)
+          
+          // 绘制置信度文本
+          ctx.setFillStyle('#ffffff')
+          ctx.setFontSize(12)
+          ctx.fillText(`置信度: ${(confidence * 100).toFixed(1)}%`, x, y - 5)
+        })
+        
+        // 绘制到Canvas
+        ctx.draw()
+      })
+      .exec()
+  },
+
+  // 使用新Canvas API绘制人脸框
+  drawFaceBoxesModern(canvas, faceBoxes, imageWidth, imageHeight) {
+    const ctx = canvas.getContext('2d')
+    const canvasWidth = canvas.width / wx.getSystemInfoSync().pixelRatio
+    const canvasHeight = canvas.height / wx.getSystemInfoSync().pixelRatio
+    
+    console.log('[调试] 新Canvas API - Canvas尺寸:', { width: canvasWidth, height: canvasHeight })
+    console.log('[调试] 人脸框数据:', faceBoxes)
+    
+    // 清除canvas
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+    
+    // 绘制检测到的人脸框
+    faceBoxes.forEach((faceBox, index) => {
+      const box = faceBox.box
+      const confidence = faceBox.confidence
+      
+      console.log('[调试] 原始人脸框坐标:', box)
+      
+      // 使用实际图片尺寸进行坐标转换
+      let scaleX, scaleY
+      if (imageWidth > 0 && imageHeight > 0) {
+        scaleX = canvasWidth / imageWidth
+        scaleY = canvasHeight / imageHeight
+      } else {
+        // 如果没有图片尺寸信息，使用Canvas尺寸作为基准
+        scaleX = canvasWidth / 640
+        scaleY = canvasHeight / 480
+      }
+      
+      // 计算在canvas上的坐标
+      const x = box[0] * scaleX
+      const y = box[1] * scaleY
+      const width = (box[2] - box[0]) * scaleX
+      const height = (box[3] - box[1]) * scaleY
+      
+      console.log('[调试] 转换后坐标:', { x, y, width, height, scaleX, scaleY })
+      
+      // 绘制边框
+      ctx.strokeStyle = confidence > 0.8 ? '#00ff00' : '#ffff00'
+      ctx.lineWidth = 3
+      ctx.strokeRect(x, y, width, height)
+      
+      // 绘制背景
+      ctx.fillStyle = confidence > 0.8 ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 255, 0, 0.1)'
+      ctx.fillRect(x, y, width, height)
+      
+      // 绘制置信度文本
+      ctx.fillStyle = '#ffffff'
+      ctx.font = '12px Arial'
+      ctx.fillText(`置信度: ${(confidence * 100).toFixed(1)}%`, x, y - 5)
+    })
+  },
+
+  // 清除人脸检测Canvas
+  clearFaceDetectionCanvas() {
+    const canvas = this.data.faceDetectionCanvas
+    if (!canvas) return
+    
+    // 检查是否是传统Canvas上下文
+    if (canvas.setFillStyle) {
+      // 传统Canvas API
+      const systemInfo = wx.getSystemInfoSync()
+      canvas.clearRect(0, 0, systemInfo.windowWidth, systemInfo.windowHeight)
+      canvas.draw()
+    } else {
+      // 新Canvas API
+      const ctx = canvas.getContext('2d')
+      const canvasWidth = canvas.width / wx.getSystemInfoSync().pixelRatio
+      const canvasHeight = canvas.height / wx.getSystemInfoSync().pixelRatio
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+    }
+  },
+
+  // Canvas触摸事件
+  onCanvasTouch(e) {
+    // 可以在这里添加触摸事件处理
+    console.log('[调试] Canvas被触摸:', e)
+  },
+
+  // 实时验证人脸（用于实时检测）
+  verifyFaceForRealTime(imagePath) {
+    // 防止重复验证
+    if (this.data.isVerifying) {
+      console.log('[调试] 正在验证中，跳过本次验证')
+      return
+    }
+    
+    this.setData({ isVerifying: true })
+    
+    const token = wx.getStorageSync('token')
+    const verifyUrl = `${app.globalData.baseUrl}/api/attendance/verify_face`
+    
+    console.log('[调试] 实时人脸验证:', verifyUrl)
+    
+    wx.uploadFile({
+      url: verifyUrl,
+      filePath: imagePath,
+      name: 'face_image',
+      header: {
+        'Authorization': `Bearer ${token}`
+      },
+      success: (verifyRes) => {
+        console.log('[调试] 实时验证响应:', verifyRes)
+        let verifyResult = {}
+        try {
+          verifyResult = JSON.parse(verifyRes.data)
+          console.log('[调试] 实时验证结果:', verifyResult)
+        } catch (e) {
+          console.error('[调试] 解析实时验证响应失败:', e)
+          this.setData({ isVerifying: false })
+          return
+        }
+        
+        // 如果人脸验证成功，进行实际打卡
+        if (verifyRes.statusCode === 200 && verifyResult.success) {
+          console.log('[调试] 实时验证成功，开始打卡')
+          this.performAttendance(imagePath)
+        } else {
+          console.log('[调试] 实时验证失败:', verifyResult.message)
+          // 实时验证失败，重置验证状态
+          this.setData({ isVerifying: false })
+        }
+      },
+      fail: (error) => {
+        console.error('[调试] 实时验证上传失败:', error)
+        // 实时验证失败，重置验证状态
+        this.setData({ isVerifying: false })
+      },
+    })
+  },
 })

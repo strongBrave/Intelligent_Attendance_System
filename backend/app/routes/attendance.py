@@ -456,7 +456,7 @@ def verify_face():
         file.save(filepath)
         
         # 人脸识别
-        current_features = face_service.extract_face_features(filepath)
+        current_features, _ = face_service.extract_face_features(filepath)
         if current_features is not None:
             user_faces = face_service.get_user_faces(current_user_id)
             if user_faces:
@@ -467,7 +467,7 @@ def verify_face():
                     max_similarity = max(max_similarity, similarity)
                 
                 # 删除临时文件
-                os.remove(filepath)
+                # os.remove(filepath)
                 
                 if max_similarity >= 0.6:
                     return jsonify({
@@ -482,7 +482,7 @@ def verify_face():
                         'message': f'人脸验证失败，相似度: {max_similarity:.4f}'
                     })
             else:
-                os.remove(filepath)
+                # os.remove(filepath)
                 return jsonify({
                     'success': False,
                     'message': '用户未注册人脸信息'
@@ -500,4 +500,55 @@ def verify_face():
         return jsonify({
             'success': False,
             'message': f'人脸验证处理失败: {str(e)}'
+        }), 500
+
+@bp.route('/api/attendance/detect_faces', methods=['POST'])
+@jwt_required()
+def detect_faces():
+    """检测图片中的人脸并返回坐标框"""
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user:
+        return jsonify({'error': '用户不存在'}), 404
+
+    # 兼容json和form-data
+    if request.content_type and request.content_type.startswith('multipart/form-data'):
+        file = request.files.get('face_image')
+    else:
+        data = request.get_json()
+        file = None
+
+    if not file or not file.filename:
+        return jsonify({'error': '请提供人脸图片'}), 400
+
+    try:
+        # 保存临时图片
+        now = datetime.now()
+        filename = f"detect_{current_user_id}_{now.strftime('%Y%m%d_%H%M%S')}.jpg"
+        upload_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'faces')
+        os.makedirs(upload_dir, exist_ok=True)
+        filepath = os.path.join(upload_dir, filename)
+        file.save(filepath)
+        
+        # 检测人脸框
+        face_boxes, image_width, image_height = face_service.detect_faces_with_boxes(filepath)
+        
+        # 删除临时文件
+        os.remove(filepath)
+        
+        return jsonify({
+            'success': True,
+            'face_boxes': face_boxes,
+            'face_count': len(face_boxes),
+            'image_width': image_width,
+            'image_height': image_height,
+            'message': f'检测到 {len(face_boxes)} 个人脸'
+        })
+        
+    except Exception as e:
+        if 'filepath' in locals() and os.path.exists(filepath):
+            os.remove(filepath)
+        return jsonify({
+            'success': False,
+            'message': f'人脸检测处理失败: {str(e)}'
         }), 500 

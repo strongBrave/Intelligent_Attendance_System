@@ -865,4 +865,56 @@
   .guide-text {
     font-size: 24rpx;
   }
+}
+
+/* 人脸检测Canvas覆盖层 */
+.face-detection-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none; /* 允许点击穿透到下层 */
+  background: transparent;
+}
+
+/* 人脸检测框样式 */
+.face-box {
+  position: absolute;
+  border: 2px solid #00ff00;
+  border-radius: 4px;
+  background: rgba(0, 255, 0, 0.1);
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+  animation: faceBoxPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes faceBoxPulse {
+  0%, 100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+/* 检测状态样式 */
+.detection-status {
+  display: block;
+  margin-top: 8px;
+  font-size: 14px;
+  color: #00ff00;
+  text-align: center;
+  animation: statusPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
 } 
