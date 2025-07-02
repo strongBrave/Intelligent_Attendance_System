@@ -20,20 +20,43 @@ def check_in():
     if not user:
         return jsonify({'error': '用户不存在'}), 404
     
-    data = request.get_json()
-    latitude = data.get('latitude')
-    longitude = data.get('longitude')
-    location = data.get('location', '')
+    # 兼容json和form-data格式
+    if request.content_type and request.content_type.startswith('multipart/form-data'):
+        # 处理multipart/form-data格式
+        latitude = request.form.get('latitude')
+        longitude = request.form.get('longitude')
+        location = request.form.get('location', '')
+        
+        # 处理人脸图片（如果有）
+        face_image = request.files.get('face_image')
+        face_url = None
+        if face_image:
+            # 保存人脸图片
+            import uuid
+            filename = f"checkin_{current_user_id}_{uuid.uuid4().hex}.jpg"
+            upload_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'faces')
+            os.makedirs(upload_dir, exist_ok=True)
+            filepath = os.path.join(upload_dir, filename)
+            face_image.save(filepath)
+            face_url = filepath
+    else:
+        # 处理JSON格式
+        data = request.get_json()
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+        location = data.get('location', '')
+        face_url = None
     
     today = datetime.now().date()
     
     # 检查今天是否已经签到
     existing_attendance = Attendance.query.filter_by(
         user_id=current_user_id,
-        date=today
+        date=today,
+        check_type='sign_in'
     ).first()
     
-    if existing_attendance and existing_attendance.sign_in_time:
+    if existing_attendance:
         return jsonify({'error': '今日已签到'}), 400
     
     # 判断签到状态
@@ -41,25 +64,24 @@ def check_in():
     department = user.department
     status = 'normal'
     
-    if department and department.work_start_time:
-        work_start_time = datetime.strptime(department.work_start_time, '%H:%M').time()
-        if now.time() > work_start_time:
+    if department and department.sign_in_time:
+        sign_in_time = datetime.strptime(department.sign_in_time, '%H:%M').time()
+        if now.time() > sign_in_time:
             status = 'late'
     
-    # 创建或更新考勤记录
-    if existing_attendance:
-        existing_attendance.sign_in_time = now
-        existing_attendance.sign_in_status = status
-        existing_attendance.sign_in_location = location
-    else:
-        attendance = Attendance(
-            user_id=current_user_id,
-            date=today,
-            sign_in_time=now,
-            sign_in_status=status,
-            sign_in_location=location
-        )
-        db.session.add(attendance)
+    # 创建考勤记录
+    attendance = Attendance(
+        user_id=current_user_id,
+        date=today,
+        check_type='sign_in',
+        status=status,
+        time=now,
+        location=location,
+        latitude=float(latitude) if latitude else None,
+        longitude=float(longitude) if longitude else None,
+        face_url=face_url
+    )
+    db.session.add(attendance)
     
     db.session.commit()
     
@@ -83,38 +105,78 @@ def check_out():
     if not user:
         return jsonify({'error': '用户不存在'}), 404
     
-    data = request.get_json()
-    latitude = data.get('latitude')
-    longitude = data.get('longitude')
-    location = data.get('location', '')
+    # 兼容json和form-data格式
+    if request.content_type and request.content_type.startswith('multipart/form-data'):
+        # 处理multipart/form-data格式
+        latitude = request.form.get('latitude')
+        longitude = request.form.get('longitude')
+        location = request.form.get('location', '')
+        
+        # 处理人脸图片（如果有）
+        face_image = request.files.get('face_image')
+        face_url = None
+        if face_image:
+            # 保存人脸图片
+            import uuid
+            filename = f"checkout_{current_user_id}_{uuid.uuid4().hex}.jpg"
+            upload_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'faces')
+            os.makedirs(upload_dir, exist_ok=True)
+            filepath = os.path.join(upload_dir, filename)
+            face_image.save(filepath)
+            face_url = filepath
+    else:
+        # 处理JSON格式
+        data = request.get_json()
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+        location = data.get('location', '')
+        face_url = None
     
     today = datetime.now().date()
     
     # 检查今天是否已经签退
-    existing_attendance = Attendance.query.filter_by(
+    existing_sign_out = Attendance.query.filter_by(
         user_id=current_user_id,
-        date=today
+        date=today,
+        check_type='sign_out'
     ).first()
     
-    if not existing_attendance or not existing_attendance.sign_in_time:
-        return jsonify({'error': '请先签到'}), 400
-    
-    if existing_attendance.sign_out_time:
+    if existing_sign_out:
         return jsonify({'error': '今日已签退'}), 400
+    
+    # 检查是否已签到
+    existing_sign_in = Attendance.query.filter_by(
+        user_id=current_user_id,
+        date=today,
+        check_type='sign_in'
+    ).first()
+    
+    if not existing_sign_in:
+        return jsonify({'error': '请先签到'}), 400
     
     # 判断签退状态
     now = datetime.now()
     department = user.department
-    status = existing_attendance.sign_in_status
+    status = existing_sign_in.status
     
-    if department and department.work_end_time:
-        work_end_time = datetime.strptime(department.work_end_time, '%H:%M').time()
-        if now.time() < work_end_time:
+    if department and department.sign_out_time:
+        sign_out_time = datetime.strptime(department.sign_out_time, '%H:%M').time()
+        if now.time() < sign_out_time:
             status = 'early_leave'
     
-    existing_attendance.sign_out_time = now
-    existing_attendance.sign_out_status = status
-    existing_attendance.sign_out_location = location
+    # 创建签退记录
+    attendance = Attendance(
+        user_id=current_user_id,
+        date=today,
+        check_type='sign_out',
+        status=status,
+        time=now,
+        location=location,
+        latitude=float(latitude) if latitude else None,
+        longitude=float(longitude) if longitude else None,
+        face_url=face_url
+    )
+    db.session.add(attendance)
     
     db.session.commit()
     
@@ -202,15 +264,14 @@ def get_today_attendance():
     ).first()
     
     return jsonify({
-        'date': today.strftime('%Y-%m-%d'),
         'check_in': {
-            'status': check_in.status if check_in else None,
             'time': check_in.time.strftime('%Y-%m-%d %H:%M:%S') if check_in and check_in.time else None,
+            'status': check_in.status if check_in else None,
             'location': check_in.location if check_in else None
         },
         'check_out': {
-            'status': check_out.status if check_out else None,
             'time': check_out.time.strftime('%Y-%m-%d %H:%M:%S') if check_out and check_out.time else None,
+            'status': check_out.status if check_out else None,
             'location': check_out.location if check_out else None
         }
     })
@@ -243,14 +304,13 @@ def get_user_today_attendance():
     return jsonify({
         'success': True,
         'data': {
-            'date': today.strftime('%Y-%m-%d'),
             'check_in': {
-                'time': check_in.time.strftime('%Y-%m-%d %H:%M:%S') if check_in else None,
+                'time': check_in.time.strftime('%Y-%m-%d %H:%M:%S') if check_in and check_in.time else None,
                 'status': check_in.status if check_in else None,
                 'location': check_in.location if check_in else None
             },
             'check_out': {
-                'time': check_out.time.strftime('%Y-%m-%d %H:%M:%S') if check_out else None,
+                'time': check_out.time.strftime('%Y-%m-%d %H:%M:%S') if check_out and check_out.time else None,
                 'status': check_out.status if check_out else None,
                 'location': check_out.location if check_out else None
             }
