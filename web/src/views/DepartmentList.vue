@@ -13,11 +13,29 @@
       <el-table :data="departments" v-loading="loading" style="width: 100%">
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="name" label="部门名称" />
-        <el-table-column label="打卡时间" width="200">
+        <el-table-column label="打卡时间" width="280">
           <template #default="scope">
             <div class="time-info">
-              <div>签到: {{ scope.row.sign_in_time }}</div>
-              <div>签退: {{ scope.row.sign_out_time }}</div>
+              <div class="time-row">
+                <span class="time-label">签到:</span>
+                <span class="time-value">{{ scope.row.sign_in_time }}</span>
+              </div>
+              <div class="time-row">
+                <span class="time-label">签退:</span>
+                <span class="time-value">{{ scope.row.sign_out_time }}</span>
+              </div>
+              <div class="time-row">
+                <span class="time-label">迟到阈值:</span>
+                <span class="time-value">{{ scope.row.late_threshold }}</span>
+              </div>
+              <div class="time-row">
+                <span class="time-label">缺勤阈值:</span>
+                <span class="time-value">{{ scope.row.absent_threshold }}</span>
+              </div>
+              <div class="time-row">
+                <span class="time-label">早退阈值:</span>
+                <span class="time-value">{{ scope.row.early_leave_threshold }}</span>
+              </div>
             </div>
           </template>
         </el-table-column>
@@ -646,6 +664,29 @@ onMounted(() => {
 .time-info {
   font-size: 12px;
   color: #606266;
+}
+
+.time-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+  line-height: 1.4;
+}
+
+.time-row:last-child {
+  margin-bottom: 0;
+}
+
+.time-label {
+  color: #909399;
+  min-width: 60px;
+  font-weight: 500;
+}
+
+.time-value {
+  color: #303133;
+  font-weight: 600;
 }
 
 .location-info {

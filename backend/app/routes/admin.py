@@ -152,7 +152,11 @@ def get_departments():
             'name': dept.name,
             'sign_in_time': dept.sign_in_time,
             'sign_out_time': dept.sign_out_time,
+            'late_threshold': dept.late_threshold,
+            'absent_threshold': dept.absent_threshold,
+            'early_leave_threshold': dept.early_leave_threshold,
             'location': dept.location,
+            'distance_threshold': dept.distance_threshold,
             'user_count': len(dept.employees) if dept.employees else 0
         }
         dept_list.append(dept_data)
