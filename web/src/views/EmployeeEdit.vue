@@ -12,6 +12,10 @@
         <el-form-item label="密码" v-if="!isEdit">
           <el-input v-model="form.password" type="password" placeholder="密码"></el-input>
         </el-form-item>
+        <el-form-item label="密码" v-if="isEdit">
+          <el-input v-model="form.password" type="password" placeholder="留空则不修改密码"></el-input>
+          <div style="font-size:12px;color:#909399;margin-top:4px;">留空则不修改密码</div>
+        </el-form-item>
         <el-form-item label="部门">
           <el-select v-model="form.department_id" placeholder="选择部门" style="width: 100%;">
             <el-option
@@ -25,6 +29,14 @@
         
         <!-- 人脸图片上传区域 -->
         <el-form-item label="人脸图片">
+          <!-- 显示原有的人脸图片 -->
+          <div v-if="isEdit && hasOriginalFace && originalFaceData" class="original-face-container">
+            <div class="original-face-title">当前人脸图片：</div>
+            <div class="original-face-image">
+              <img :src="getFaceImageUrl(originalFaceData.face_url)" alt="原有人脸图片" />
+            </div>
+          </div>
+          
           <div class="face-upload-container">
             <el-upload
               ref="uploadRef"
@@ -43,6 +55,7 @@
               <template #tip>
                 <div class="el-upload__tip">
                   支持jpg/png格式，最多上传5张图片，建议上传清晰的人脸正面照片
+                  {{ isEdit ? '（编辑模式下，不上传新图片则保持原有人脸数据）' : '' }}
                 </div>
               </template>
             </el-upload>
@@ -104,6 +117,10 @@ const form = ref({
   department_id: null 
 })
 
+// 添加原有数据的存储
+const originalFaceData = ref(null)
+const hasOriginalFace = ref(false)
+
 onMounted(async () => {
   // 获取部门列表
   try {
@@ -115,14 +132,21 @@ onMounted(async () => {
   
   if (isEdit) {
     try {
-      const res = await api.get('/admin/users')
-      const user = (res.data.users || []).find(u => u.id == route.params.id)
+      // 获取单个用户的详细信息
+      const res = await api.get(`/admin/users/${route.params.id}`)
+      const user = res.data.user
       if (user) {
         Object.assign(form.value, {
-          name: user.name,  // 姓名
+          name: user.name,
           phone: user.phone,
-          department_id: user.department ? user.department.id : null
+          department_id: user.department_id
         })
+        
+        // 保存原有的人脸数据
+        if (user.face_data) {
+          originalFaceData.value = user.face_data
+          hasOriginalFace.value = true
+        }
       }
     } catch (error) {
       console.error('获取用户信息失败:', error)
@@ -178,6 +202,16 @@ const removeFile = (index) => {
   fileList.value.splice(index, 1)
 }
 
+// 获取人脸图片URL
+const getFaceImageUrl = (faceUrl) => {
+  console.log(faceUrl)
+  if (!faceUrl) return ''
+  // 从完整路径中提取文件名
+  const filename = faceUrl.split('\\').pop()
+  console.log(filename)
+  return `http://localhost:5000/uploads/faces/${filename}`
+}
+
 // 提交表单
 const onSubmit = async () => {
   if (!form.value.name || !form.value.phone) {  // 检查姓名和手机号
@@ -194,7 +228,8 @@ const onSubmit = async () => {
   console.log('当前文件列表:', fileList.value)
   console.log('文件列表长度:', fileList.value.length)
   
-  if (fileList.value.length === 0) {
+  // 只在添加模式下要求上传人脸图片
+  if (!isEdit && fileList.value.length === 0) {
     ElMessage.error('请至少上传一张人脸图片')
     return
   }
@@ -203,12 +238,23 @@ const onSubmit = async () => {
   
   try {
     if (isEdit) {
-      // 编辑模式
-      await api.put(`/admin/users/${route.params.id}`, form.value)
+      // 编辑模式 - 准备提交数据
+      const updateData = {
+        name: form.value.name,
+        phone: form.value.phone,
+        department_id: form.value.department_id
+      }
       
-      // 如果上传了新的人脸图片，需要重新注册人脸
+      // 只有在填写了密码时才包含密码字段
+      if (form.value.password && form.value.password.trim()) {
+        updateData.password = form.value.password
+      }
+      
+      await api.put(`/admin/users/${route.params.id}`, updateData)
+      
+      // 如果上传了新的人脸图片，需要更新人脸数据
       if (fileList.value.length > 0) {
-        await registerFaces(route.params.id)
+        await updateFaces(route.params.id)
       }
     } else {
       // 添加模式
@@ -227,6 +273,52 @@ const onSubmit = async () => {
     ElMessage.error(errorMsg)
   } finally {
     loading.value = false
+  }
+}
+
+// 更新人脸数据
+const updateFaces = async (userId) => {
+  try {
+    if (fileList.value.length === 1) {
+      // 单张图片
+      const formData = new FormData()
+      formData.append('face_images', fileList.value[0].raw)
+      
+      const response = await api.post(`/face/update_face/${userId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      if (response.data.code === 0) {
+        ElMessage.success('人脸数据更新成功')
+      } else {
+        throw new Error(response.data.msg)
+      }
+    } else {
+      // 多张图片
+      const formData = new FormData()
+      
+      fileList.value.forEach((file, index) => {
+        formData.append('face_images', file.raw)
+      })
+      
+      const response = await api.post(`/face/update_face/${userId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      if (response.data.code === 0) {
+        ElMessage.success(`人脸数据更新成功，处理了 ${response.data.data.valid_images} 张有效图片`)
+      } else {
+        throw new Error(response.data.msg)
+      }
+    }
+  } catch (error) {
+    console.error('人脸数据更新失败:', error)
+    ElMessage.error(error.message || '人脸数据更新失败，请重试')
+    throw error
   }
 }
 
@@ -334,5 +426,33 @@ const registerFaces = async (userId) => {
 :deep(.el-upload-list--picture-card .el-upload-list__item) {
   width: 120px;
   height: 120px;
+}
+
+.original-face-container {
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid #e4e7ed;
+  border-radius: 6px;
+  background-color: #fafafa;
+}
+
+.original-face-title {
+  font-size: 14px;
+  color: #606266;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.original-face-image {
+  display: flex;
+  justify-content: center;
+}
+
+.original-face-image img {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #d9d9d9;
 }
 </style> 

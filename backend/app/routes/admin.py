@@ -903,4 +903,36 @@ def makeup_attendance():
             'time': attendance.time.strftime('%Y-%m-%d %H:%M:%S'),
             'location': attendance.location
         }
-    }) 
+    })
+
+@bp.route('/api/admin/users/<int:user_id>', methods=['GET'])
+@jwt_required()
+def get_user_detail(user_id):
+    """获取单个用户详细信息"""
+    current_user = User.query.filter_by(id=int(get_jwt_identity())).first()
+    if not current_user or current_user.role != 'admin':
+        return jsonify({'error': '权限不足'}), 403
+    
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': '用户不存在'}), 404
+    
+    user_data = {
+        'id': user.id,
+        'name': user.name,
+        'phone': user.phone,
+        'role': user.role,
+        'department_id': user.department_id,
+        'department': {
+            'id': user.department.id,
+            'name': user.department.name
+        } if user.department else None,
+        'created_at': user.created_at.isoformat() if user.created_at else None,
+        'face_data': {
+            'id': user.face_data.id,
+            'face_url': user.face_data.face_url,
+            'has_features': user.face_data.get_features() is not None
+        } if user.face_data else None
+    }
+    
+    return jsonify({'user': user_data}) 

@@ -59,10 +59,8 @@ def register_face():
         file.save(filepath)
         
         # 提取人脸特征
-        with open(filepath, 'rb') as f:
-            image_data = f.read()
         
-        features = face_service.extract_face_features(image_data)
+        features = face_service.extract_face_features(filepath)
         if features is None:
             # 删除保存的图片
             os.remove(filepath)
@@ -142,7 +140,11 @@ def register_multiple_faces():
             return jsonify({'code': 1, 'msg': '没有有效的图片文件'})
         
         # 提取多张图片的特征向量
-        features_list = face_service.extract_multiple_face_features(image_data_list)
+        features_list = []
+        for image_data in image_data_list:
+            features = face_service.extract_face_features(image_data)
+            if features is not None:
+                features_list.append(features)
         
         # 计算平均特征向量
         average_features = face_service.calculate_average_features(features_list)
@@ -274,6 +276,116 @@ def get_user_face_info(user_id):
         
     except Exception as e:
         return jsonify({'code': 1, 'msg': f'获取失败: {str(e)}'})
+
+@bp.route('/update_face/<int:user_id>', methods=['POST'])
+def update_face(user_id):
+    """更新用户人脸数据"""
+    try:
+        # 检查用户是否存在
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'code': 1, 'msg': '用户不存在'})
+        
+        # 获取上传的图片
+        files = request.files.getlist('face_images')
+        if not files or len(files) == 0:
+            return jsonify({'code': 1, 'msg': '请上传人脸图片'})
+        
+        if len(files) > 5:
+            return jsonify({'code': 1, 'msg': '最多只能上传5张图片'})
+        
+        # 保存图片并提取特征
+        saved_files = []
+        image_data_list = []
+        
+        for i, file in enumerate(files):
+            if file.filename == '':
+                continue
+                
+            # 保存图片
+            filename = f"{user_id}_{uuid.uuid4().hex}_{i}.jpg"
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            file.save(filepath)
+            saved_files.append(filepath)
+            
+            # 读取图片数据
+            image_data_list.append(filepath)
+        
+        if len(image_data_list) == 0:
+            return jsonify({'code': 1, 'msg': '没有有效的图片文件'})
+        
+        # 提取多张图片的特征向量
+        features_list = []
+        for image_data in image_data_list:
+            features = face_service.extract_face_features(image_data)
+            if features is not None:
+                features_list.append(features)
+        
+        if len(features_list) == 0:
+            # 清理保存的文件
+            for filepath in saved_files:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+            return jsonify({'code': 1, 'msg': '无法从图片中提取人脸特征，请确保图片中有清晰的人脸'})
+        
+        # 计算平均特征向量
+        average_features = face_service.calculate_average_features(features_list)
+        if average_features is None:
+            # 清理保存的文件
+            for filepath in saved_files:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+            return jsonify({'code': 1, 'msg': '无法计算平均特征向量'})
+        
+        # 使用第一张图片作为主要图片
+        main_image_path = saved_files[0]
+        
+        # 更新或创建人脸数据记录
+        if user.face_data:
+            # 删除旧的人脸图片文件
+            if user.face_data.face_url and os.path.exists(user.face_data.face_url):
+                os.remove(user.face_data.face_url)
+            
+            # 更新现有记录
+            user.face_data.face_url = main_image_path
+            user.face_data.set_features(average_features)
+        else:
+            # 创建新的人脸数据记录
+            face_data = FaceData(
+                face_url=main_image_path,
+                user=user
+            )
+            face_data.set_features(average_features)
+            db.session.add(face_data)
+        
+        # 保存到数据库
+        db.session.commit()
+        
+        # 清理其他图片文件（只保留主图片）
+        for filepath in saved_files[1:]:
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        
+        return jsonify({
+            'code': 0, 
+            'msg': f'人脸数据更新成功，处理了 {len(features_list)} 张图片',
+            'data': {
+                'face_data_id': user.face_data.id if user.face_data else None,
+                'feature_dim': len(average_features),
+                'processed_images': len(features_list),
+                'valid_images': len([f for f in features_list if f is not None]),
+                'model_info': face_service.get_model_info()
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        # 清理保存的文件
+        if 'saved_files' in locals():
+            for filepath in saved_files:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+        return jsonify({'code': 1, 'msg': f'人脸数据更新失败: {str(e)}'})
 
 @bp.route('/delete_face/<int:user_id>', methods=['DELETE'])
 def delete_face(user_id):
