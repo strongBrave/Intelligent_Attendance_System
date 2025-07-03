@@ -8,8 +8,7 @@ Page({
       department: null,
       role: ''
     },
-    hasFace: false,
-    faceUrl: '',
+    avatarUrl: '', // 用户头像URL
     todayStatus: {
       sign_in: null,
       sign_out: null,
@@ -24,13 +23,14 @@ Page({
 
   onShow() {
     this.loadUserInfo()
+    this.loadUserAvatar()
     this.checkTodayStatus()
   },
 
   // 初始化页面
   initPage() {
     this.loadUserInfo()
-    this.checkFaceRegistration()
+    this.loadUserAvatar()
     this.checkTodayStatus()
   },
 
@@ -49,8 +49,8 @@ Page({
     }
   },
 
-  // 检查人脸注册状态
-  checkFaceRegistration() {
+  // 加载用户头像
+  loadUserAvatar() {
     const token = wx.getStorageSync('token')
     if (!token) return
 
@@ -62,26 +62,55 @@ Page({
       },
       success: (res) => {
         if (res.statusCode === 200 && res.data.success) {
-          const hasFace = res.data.has_face || false
-          let faceUrl = ''
-          
-          if (hasFace && res.data.face_url) {
-            // 构建完整的人脸照片URL
-            const filename = res.data.face_url.split('/').pop()
-            faceUrl = `${app.globalData.baseUrl}/uploads/faces/${filename}`
+          if (res.data.has_face && res.data.face_url) {
+            // 构建完整的人脸图片URL
+            // 处理Windows路径分隔符问题，统一使用正斜杠
+            const normalizedPath = res.data.face_url.replace(/\\/g, '/')
+            const filename = normalizedPath.split('/').pop()
+            const avatarUrl = `${app.globalData.baseUrl}/uploads/faces/${filename}`
+            
+            // 检查URL协议，如果是HTTP则使用下载方式
+            if (avatarUrl.startsWith('http://')) {
+              this.downloadAndSetAvatar(avatarUrl)
+            } else {
+              this.setData({
+                avatarUrl: avatarUrl
+              })
+            }
           }
-          
+        }
+      },
+      fail: (err) => {
+        console.error('获取用户头像失败:', err)
+      }
+    })
+  },
+
+  // 下载并设置头像
+  downloadAndSetAvatar(avatarUrl) {
+    wx.downloadFile({
+      url: avatarUrl,
+      success: (res) => {
+        if (res.statusCode === 200) {
           this.setData({
-            hasFace: hasFace,
-            faceUrl: faceUrl
+            avatarUrl: res.tempFilePath
+          })
+        } else {
+          this.setData({
+            avatarUrl: ''
           })
         }
       },
       fail: (err) => {
-        console.error('检查人脸状态失败:', err)
+        console.error('头像下载失败:', err)
+        this.setData({
+          avatarUrl: ''
+        })
       }
     })
   },
+
+
 
   // 检查今日考勤状态
   checkTodayStatus() {
@@ -180,5 +209,19 @@ Page({
       'early_leave': '早退'
     }
     return statusMap[status] || status
+  },
+
+  // 头像加载成功
+  onAvatarLoad(e) {
+    // 头像加载成功
+  },
+
+  // 头像加载失败
+  onAvatarError(e) {
+    console.error('头像加载失败:', e.detail)
+    // 加载失败时清空avatarUrl，显示占位符
+    this.setData({
+      avatarUrl: ''
+    })
   }
 }) 

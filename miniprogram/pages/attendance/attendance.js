@@ -264,7 +264,7 @@ Page({
     })
   },
 
-  // 检查人脸注册状态
+  // 检查人脸注册状态（简化版本，不再强制要求人脸注册）
   checkFaceRegistration() {
     console.log('[调试] checkFaceRegistration 被调用')
     const token = wx.getStorageSync('token')
@@ -280,71 +280,16 @@ Page({
       return
     }
 
-    // 检查用户是否已注册人脸
-    console.log('[调试] 开始请求人脸状态')
-    wx.request({
-      url: `${app.globalData.baseUrl}/api/user/face_status`,
-      method: 'GET',
-      header: {
-        'Authorization': `Bearer ${token}`
-      },
-      success: (res) => {
-        console.log('[调试] 人脸状态响应:', res.statusCode, res.data)
-        if (res.statusCode === 200 && res.data.success) {
-          if (res.data.has_face) {
-            console.log('[调试] 用户已注册人脸，设置isReady为true')
-            this.setData({
-              isReady: true,
-              statusTip: null
-            })
-            // 调用按钮状态调试
-            this.debugButtonStatus()
-            // 检查按钮可用性
-            this.checkButtonAvailability()
-          } else {
-            console.log('[调试] 用户未注册人脸，设置isReady为false')
-            this.setData({
-              isReady: false,
-              statusTip: {
-                type: 'warning',
-                message: '管理员尚未为您注册人脸信息，请联系管理员'
-              }
-            })
-            // 调用按钮状态调试
-            this.debugButtonStatus()
-            // 检查按钮可用性
-            this.checkButtonAvailability()
-          }
-        } else {
-          console.log('[调试] 人脸状态检查失败，设置isReady为false')
-          this.setData({
-            isReady: false,
-            statusTip: {
-              type: 'error',
-              message: '检查人脸状态失败'
-            }
-          })
-          // 调用按钮状态调试
-          this.debugButtonStatus()
-          // 检查按钮可用性
-          this.checkButtonAvailability()
-        }
-      },
-      fail: (err) => {
-        console.error('[调试] 检查人脸状态失败:', err)
-        this.setData({
-          isReady: false,
-          statusTip: {
-            type: 'error',
-            message: '检查人脸状态失败'
-          }
-        })
-        // 调用按钮状态调试
-        this.debugButtonStatus()
-        // 检查按钮可用性
-        this.checkButtonAvailability()
-      }
+    // 直接设置isReady为true，不再检查人脸注册状态
+    console.log('[调试] 跳过人脸注册检查，直接设置isReady为true')
+    this.setData({
+      isReady: true,
+      statusTip: null
     })
+    // 调用按钮状态调试
+    this.debugButtonStatus()
+    // 检查按钮可用性
+    this.checkButtonAvailability()
   },
 
   // 获取今日考勤状态

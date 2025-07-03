@@ -55,7 +55,12 @@ def create_app():
     def serve_face_image(filename):
         """提供人脸照片访问"""
         uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'faces')
-        return send_from_directory(uploads_dir, filename)
+        response = send_from_directory(uploads_dir, filename)
+        # 添加CORS头
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        return response
 
     # 创建数据库表
     with app.app_context():

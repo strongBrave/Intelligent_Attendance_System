@@ -2,7 +2,10 @@
   <!-- 用户信息卡片 -->
   <view class="user-card">
     <view class="user-avatar">
-      <image class="avatar-image" src="{{userInfo.avatar || '/images/default-avatar.png'}}" mode="aspectFill"></image>
+      <image wx:if="{{avatarUrl}}" class="avatar-image" src="{{avatarUrl}}" mode="aspectFill" binderror="onAvatarError" bindload="onAvatarLoad"></image>
+      <view wx:else class="avatar-placeholder">
+        <text class="avatar-text">{{userInfo.name ? userInfo.name.charAt(0) : 'U'}}</text>
+      </view>
     </view>
     <view class="user-info">
       <text class="user-name">{{userInfo.name}}</text>
@@ -11,19 +14,7 @@
     </view>
   </view>
 
-  <!-- 人脸信息展示 -->
-  <view class="face-section" wx:if="{{hasFace}}">
-    <view class="section-header">
-      <text class="section-title">注册人脸</text>
-    </view>
-    <view class="face-content">
-      <image class="face-image" src="{{faceUrl}}" mode="aspectFill"></image>
-      <view class="face-info">
-        <text class="face-status">已注册人脸信息</text>
-        <text class="face-tip">管理员已为您注册人脸，可直接进行考勤打卡</text>
-      </view>
-    </view>
-  </view>
+
 
   <!-- 功能菜单 -->
   <view class="menu-section">
