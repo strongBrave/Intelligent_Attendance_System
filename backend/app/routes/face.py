@@ -64,7 +64,20 @@ def register_face():
         if features is None:
             # 删除保存的图片
             os.remove(filepath)
-            return jsonify({'code': 1, 'msg': '无法从图片中提取人脸特征，请确保图片中有清晰的人脸'})
+            
+            # 检查用户是否是新创建的（没有考勤记录和人脸数据）
+            # 如果是新用户且人脸注册失败，则删除该用户以保持数据一致性
+            attendance_count = Attendance.query.filter_by(user_id=user.id).count()
+            if attendance_count == 0 and not user.face_data:
+                try:
+                    db.session.delete(user)
+                    db.session.commit()
+                    return jsonify({'code': 1, 'msg': 'AI服务器连接失败，无法提取人脸特征，用户注册已回滚'})
+                except Exception as rollback_error:
+                    db.session.rollback()
+                    return jsonify({'code': 1, 'msg': f'人脸特征提取失败且用户回滚失败: {str(rollback_error)}'})
+            else:
+                return jsonify({'code': 1, 'msg': '无法从图片中提取人脸特征，请确保图片中有清晰的人脸'})
         
         # 创建人脸数据记录
         face_data = FaceData(
@@ -146,6 +159,27 @@ def register_multiple_faces():
             if features is not None:
                 features_list.append(features)
         
+        # 如果没有任何有效的特征向量，需要回滚用户创建
+        if len(features_list) == 0:
+            # 清理保存的文件
+            for filepath in saved_files:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+            
+            # 检查用户是否是新创建的（没有考勤记录和人脸数据）
+            # 如果是新用户且人脸注册失败，则删除该用户以保持数据一致性
+            attendance_count = Attendance.query.filter_by(user_id=user.id).count()
+            if attendance_count == 0 and not user.face_data:
+                try:
+                    db.session.delete(user)
+                    db.session.commit()
+                    return jsonify({'code': 1, 'msg': 'AI服务器连接失败，无法从任何图片中提取人脸特征，用户注册已回滚'})
+                except Exception as rollback_error:
+                    db.session.rollback()
+                    return jsonify({'code': 1, 'msg': f'人脸特征提取失败且用户回滚失败: {str(rollback_error)}'})
+            else:
+                return jsonify({'code': 1, 'msg': '无法从任何图片中提取有效的人脸特征，请确保图片中有清晰的人脸'})
+        
         # 计算平均特征向量
         average_features = face_service.calculate_average_features(features_list)
         if average_features is None:
@@ -153,7 +187,20 @@ def register_multiple_faces():
             for filepath in saved_files:
                 if os.path.exists(filepath):
                     os.remove(filepath)
-            return jsonify({'code': 1, 'msg': '无法计算平均特征向量'})
+            
+            # 检查用户是否是新创建的（没有考勤记录和人脸数据）
+            # 如果是新用户且人脸注册失败，则删除该用户以保持数据一致性
+            attendance_count = Attendance.query.filter_by(user_id=user.id).count()
+            if attendance_count == 0 and not user.face_data:
+                try:
+                    db.session.delete(user)
+                    db.session.commit()
+                    return jsonify({'code': 1, 'msg': 'AI服务器连接失败，无法提取人脸特征，用户注册已回滚'})
+                except Exception as rollback_error:
+                    db.session.rollback()
+                    return jsonify({'code': 1, 'msg': f'人脸特征提取失败且用户回滚失败: {str(rollback_error)}'})
+            else:
+                return jsonify({'code': 1, 'msg': '无法计算平均特征向量'})
         
         # 使用第一张图片作为主要图片
         main_image_path = saved_files[0]
