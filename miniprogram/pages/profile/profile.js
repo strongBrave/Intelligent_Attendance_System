@@ -149,13 +149,6 @@ Page({
     })
   },
 
-  // 跳转到考勤记录
-  goToAttendanceHistory() {
-    wx.navigateTo({
-      url: '/pages/attendance-history/attendance-history'
-    })
-  },
-
   // 跳转到设置
   goToSettings() {
     wx.navigateTo({

@@ -33,19 +33,6 @@
         </view>
       </view>
       
-      <view class="menu-item" bindtap="goToAttendanceHistory">
-        <view class="menu-icon history-icon">
-          <text class="icon-text">📊</text>
-        </view>
-        <view class="menu-content">
-          <text class="menu-title">考勤记录</text>
-          <text class="menu-subtitle">查看历史考勤</text>
-        </view>
-        <view class="menu-arrow">
-          <text class="arrow-text">›</text>
-        </view>
-      </view>
-      
       <view class="menu-item" bindtap="goToSettings">
         <view class="menu-icon settings-icon">
           <text class="icon-text">⚙️</text>

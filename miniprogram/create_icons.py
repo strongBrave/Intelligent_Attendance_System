@@ -54,6 +54,8 @@ def main():
         ("日历", "calendar-active.png", (102, 126, 234)),  # 蓝色
         ("统计", "stats.png", (153, 153, 153)),  # 灰色
         ("统计", "stats-active.png", (102, 126, 234)),  # 蓝色
+        ("记录", "history.png", (153, 153, 153)),  # 灰色
+        ("记录", "history-active.png", (102, 126, 234)),  # 蓝色
         ("我的", "profile.png", (153, 153, 153)),  # 灰色
         ("我的", "profile-active.png", (102, 126, 234)),  # 蓝色
     ]
