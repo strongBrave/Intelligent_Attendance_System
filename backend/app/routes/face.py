@@ -416,3 +416,21 @@ def delete_face(user_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'code': 1, 'msg': f'删除失败: {str(e)}'}) 
+
+@bp.route('/test-cloud-api', methods=['GET'])
+def test_cloud_api():
+    """测试云端API连接"""
+    try:
+        success, message = face_service.test_cloud_api_connection()
+        
+        return jsonify({
+            'success': success,
+            'message': message,
+            'model_info': face_service.get_model_info()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'测试失败: {str(e)}'
+        }), 500 
