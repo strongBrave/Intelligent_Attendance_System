@@ -112,11 +112,20 @@
           <template #default="scope">
             <div class="status-selector">
               <el-select v-model="scope.row.status" size="small" style="width: 100px" placeholder="选择状态">
-                <el-option label="正常" value="normal" />
-                <el-option label="迟到" value="late" />
-                <el-option label="早退" value="early_leave" />
-                <el-option label="缺勤" value="absent" />
-                <el-option label="未到时间" value="not_yet_time" />
+                <!-- 缺勤记录（没有id）只能补录签到相关状态 -->
+                <template v-if="!scope.row.id">
+                  <el-option label="正常签到" value="normal" />
+                  <el-option label="迟到" value="late" />
+                  <el-option label="缺勤" value="absent" />
+                </template>
+                <!-- 已存在的记录可以修改为所有状态 -->
+                <template v-else>
+                  <el-option label="正常" value="normal" />
+                  <el-option label="迟到" value="late" />
+                  <el-option label="早退" value="early_leave" />
+                  <el-option label="缺勤" value="absent" />
+                  <el-option label="未到时间" value="not_yet_time" />
+                </template>
               </el-select>
               <el-button size="small" type="primary" @click="updateStatus(scope.row)" style="margin-left: 8px">更新</el-button>
             </div>

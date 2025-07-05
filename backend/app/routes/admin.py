@@ -762,7 +762,7 @@ def get_department_attendance_detail(department_id):
             else:
                 sign_out_records.append(record_data)
     
-    # 处理缺勤员工（未签到的员工）
+    # 处理未签到的员工
     for employee in employees:
         if employee.id not in signed_in_users:
             absent_records.append({
@@ -879,6 +879,23 @@ def makeup_attendance():
     if exist:
         return jsonify({'error': '该员工当天已存在该类型考勤记录'}), 400
 
+    # 验证状态和类型的合理性
+    if check_type == 'sign_in':
+        # 签到记录只能补录：正常、迟到、缺勤
+        valid_sign_in_statuses = ['normal', 'late', 'absent']
+        if status not in valid_sign_in_statuses:
+            return jsonify({'error': '签到记录只能补录为正常、迟到或缺勤状态'}), 400
+    elif check_type == 'sign_out':
+        # 签退记录只能在已有签到记录的情况下补录
+        sign_in_record = Attendance.query.filter_by(user_id=user_id, date=date_obj, check_type='sign_in').first()
+        if not sign_in_record:
+            return jsonify({'error': '员工当天未签到，不能补录签退记录'}), 400
+        
+        # 签退记录只能补录：正常、早退
+        valid_sign_out_statuses = ['normal', 'early_leave']
+        if status not in valid_sign_out_statuses:
+            return jsonify({'error': '签退记录只能补录为正常或早退状态'}), 400
+
     # 生成考勤时间
     if time_str:
         try:
@@ -888,7 +905,7 @@ def makeup_attendance():
             dt = datetime.combine(date_obj, datetime.now().time())
     else:
         dt = datetime.combine(date_obj, datetime.now().time())
-
+    print(status)
     attendance = Attendance(
         user_id=user_id,
         date=date_obj,
