@@ -12,6 +12,7 @@ class Department(db.Model):
     late_threshold = db.Column(db.String(5), default='09:30')  # 迟到阈值，格式 HH:MM
     absent_threshold = db.Column(db.String(5), default='10:00')  # 缺勤阈值，格式 HH:MM
     early_leave_threshold = db.Column(db.String(5), default='17:30')  # 早退阈值，格式 HH:MM
+    late_leave_threshold = db.Column(db.String(5), default='19:00')  # 晚退阈值，格式 HH:MM
     location = db.Column(db.String(128))  # 打卡位置
     distance_threshold = db.Column(db.Float, default=100.0)  # 打卡距离阈值（米）
     employees = db.relationship('User', backref='department', lazy=True)

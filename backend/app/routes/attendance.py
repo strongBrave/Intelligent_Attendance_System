@@ -162,7 +162,13 @@ def check_out():
     if department and department.sign_out_time:
         sign_out_time = datetime.strptime(department.sign_out_time, '%H:%M').time()
         if now.time() < sign_out_time:
+            # 早退
             status = 'early_leave'
+        elif department.late_leave_threshold:
+            # 检查是否晚退
+            late_leave_time = datetime.strptime(department.late_leave_threshold, '%H:%M').time()
+            if now.time() > late_leave_time:
+                status = 'late_leave'
     
     # 创建签退记录
     attendance = Attendance(

@@ -156,6 +156,7 @@ def get_departments():
             'late_threshold': dept.late_threshold,
             'absent_threshold': dept.absent_threshold,
             'early_leave_threshold': dept.early_leave_threshold,
+            'late_leave_threshold': dept.late_leave_threshold,
             'location': dept.location,
             'distance_threshold': dept.distance_threshold,
             'user_count': len(dept.employees) if dept.employees else 0
@@ -177,6 +178,7 @@ def create_department():
     late_threshold = data.get('late_threshold', '09:30')
     absent_threshold = data.get('absent_threshold', '10:00')
     early_leave_threshold = data.get('early_leave_threshold', '17:30')
+    late_leave_threshold = data.get('late_leave_threshold', '19:00')
     location = data.get('location', '')
     distance_threshold = data.get('distance_threshold', 100.0)
     if not name:
@@ -191,6 +193,7 @@ def create_department():
         late_threshold=late_threshold,
         absent_threshold=absent_threshold,
         early_leave_threshold=early_leave_threshold,
+        late_leave_threshold=late_leave_threshold,
         location=location,
         distance_threshold=distance_threshold
     )
@@ -228,6 +231,7 @@ def update_department(department_id):
     late_threshold = data.get('late_threshold')
     absent_threshold = data.get('absent_threshold')
     early_leave_threshold = data.get('early_leave_threshold')
+    late_leave_threshold = data.get('late_leave_threshold')
     location = data.get('location')
     distance_threshold = data.get('distance_threshold')
     if name:
@@ -242,6 +246,8 @@ def update_department(department_id):
         department.absent_threshold = absent_threshold
     if early_leave_threshold:
         department.early_leave_threshold = early_leave_threshold
+    if late_leave_threshold:
+        department.late_leave_threshold = late_leave_threshold
     if location is not None:
         department.location = location
     if distance_threshold is not None:
@@ -403,6 +409,10 @@ def get_attendance_records():
             'time': record.time.strftime('%Y-%m-%d %H:%M:%S') if record.time else None,
             'location': formatted_location
         }
+        
+        # 为缺勤状态的记录添加备注信息
+        if record.status == 'absent':
+            record_data['remark'] = '今天已签到，但缺勤'
         records.append(record_data)
     
     return jsonify({
@@ -434,7 +444,8 @@ def get_department_attendance_settings(department_id):
             'sign_out_time': department.sign_out_time,
             'late_threshold': department.late_threshold,
             'absent_threshold': department.absent_threshold,
-            'early_leave_threshold': department.early_leave_threshold
+            'early_leave_threshold': department.early_leave_threshold,
+            'late_leave_threshold': department.late_leave_threshold
         }
     })
 
@@ -485,6 +496,12 @@ def update_department_attendance_settings(department_id):
             return jsonify({'error': '早退阈值格式错误，请使用HH:MM格式'}), 400
         department.early_leave_threshold = data['early_leave_threshold']
     
+    # 更新晚退阈值
+    if 'late_leave_threshold' in data:
+        if not time_pattern.match(data['late_leave_threshold']):
+            return jsonify({'error': '晚退阈值格式错误，请使用HH:MM格式'}), 400
+        department.late_leave_threshold = data['late_leave_threshold']
+    
     # 验证时间逻辑
     try:
         def time_to_minutes(time_str):
@@ -496,6 +513,7 @@ def update_department_attendance_settings(department_id):
         absent_minutes = time_to_minutes(department.absent_threshold)
         early_leave_minutes = time_to_minutes(department.early_leave_threshold)
         sign_out_minutes = time_to_minutes(department.sign_out_time)
+        late_leave_minutes = time_to_minutes(department.late_leave_threshold)
         
         # 检查时间逻辑：签到时间 <= 迟到阈值 <= 缺勤阈值
         if sign_in_minutes > late_minutes:
@@ -504,9 +522,12 @@ def update_department_attendance_settings(department_id):
         if late_minutes > absent_minutes:
             return jsonify({'error': '缺勤阈值不能早于迟到阈值'}), 400
         
-        # 检查时间逻辑：早退阈值 <= 签退时间
+        # 检查时间逻辑：早退阈值 <= 签退时间 <= 晚退阈值
         if early_leave_minutes > sign_out_minutes:
             return jsonify({'error': '早退阈值不能晚于签退时间'}), 400
+        
+        if sign_out_minutes > late_leave_minutes:
+            return jsonify({'error': '晚退阈值不能早于签退时间'}), 400
             
     except Exception as e:
         return jsonify({'error': f'时间验证失败: {str(e)}'}), 400
@@ -520,7 +541,8 @@ def update_department_attendance_settings(department_id):
             'sign_out_time': department.sign_out_time,
             'late_threshold': department.late_threshold,
             'absent_threshold': department.absent_threshold,
-            'early_leave_threshold': department.early_leave_threshold
+            'early_leave_threshold': department.early_leave_threshold,
+            'late_leave_threshold': department.late_leave_threshold
         }
     })
 
@@ -546,7 +568,8 @@ def get_all_departments_attendance_settings():
                 'sign_out_time': dept.sign_out_time,
                 'late_threshold': dept.late_threshold,
                 'absent_threshold': dept.absent_threshold,
-                'early_leave_threshold': dept.early_leave_threshold
+                'early_leave_threshold': dept.early_leave_threshold,
+                'late_leave_threshold': dept.late_leave_threshold
             }
         }
         settings_list.append(settings_data)
@@ -585,7 +608,8 @@ def get_department_detail(department_id):
             'sign_out_time': department.sign_out_time,
             'late_threshold': department.late_threshold,
             'absent_threshold': department.absent_threshold,
-            'early_leave_threshold': department.early_leave_threshold
+            'early_leave_threshold': department.early_leave_threshold,
+            'late_leave_threshold': department.late_leave_threshold
         },
         'employees': employees,
         'total_employees': len(employees)
@@ -750,6 +774,8 @@ def get_department_attendance_detail(department_id):
             if attendance.status == 'late':
                 late_records.append(record_data)
             elif attendance.status == 'absent':
+                # 已签到但状态为缺勤的记录，添加备注信息
+                record_data['remark'] = '今天已签到，但缺勤'
                 absent_records.append(record_data)
             elif attendance.status == 'not_yet_time':
                 not_yet_time_records.append(record_data)
@@ -773,7 +799,8 @@ def get_department_attendance_detail(department_id):
                 'time': None,
                 'location': None,
                 'status': 'absent',
-                'check_type': None
+                'check_type': None,
+                'remark': '今天未签到，还未缺勤'
             })
     
     # 计算统计信息
@@ -831,8 +858,9 @@ def update_attendance_status(attendance_id):
     if new_status not in valid_statuses:
         return jsonify({'error': '无效的状态值'}), 400
     
-    # 更新状态
+    # 更新状态和时间
     attendance.status = new_status
+    attendance.time = datetime.now()  # 更新为当前修改时间
     db.session.commit()
     
     return jsonify({
@@ -896,15 +924,8 @@ def makeup_attendance():
         if status not in valid_sign_out_statuses:
             return jsonify({'error': '签退记录只能补录为正常或早退状态'}), 400
 
-    # 生成考勤时间
-    if time_str:
-        try:
-            time_obj = datetime.strptime(time_str, '%H:%M:%S')
-            dt = datetime.combine(date_obj, time_obj.time())
-        except Exception:
-            dt = datetime.combine(date_obj, datetime.now().time())
-    else:
-        dt = datetime.combine(date_obj, datetime.now().time())
+    # 生成考勤时间 - 统一使用当前修改时间
+    dt = datetime.now()  # 使用当前时间作为补录时间
     print(status)
     attendance = Attendance(
         user_id=user_id,

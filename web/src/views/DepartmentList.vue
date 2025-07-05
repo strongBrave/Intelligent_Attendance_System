@@ -16,25 +16,31 @@
         <el-table-column label="打卡时间" width="280">
           <template #default="scope">
             <div class="time-info">
-              <div class="time-row">
-                <span class="time-label">签到:</span>
-                <span class="time-value">{{ scope.row.sign_in_time }}</span>
-              </div>
-              <div class="time-row">
-                <span class="time-label">签退:</span>
-                <span class="time-value">{{ scope.row.sign_out_time }}</span>
-              </div>
-              <div class="time-row">
-                <span class="time-label">迟到阈值:</span>
-                <span class="time-value">{{ scope.row.late_threshold }}</span>
-              </div>
-              <div class="time-row">
-                <span class="time-label">缺勤阈值:</span>
-                <span class="time-value">{{ scope.row.absent_threshold }}</span>
-              </div>
-              <div class="time-row">
-                <span class="time-label">早退阈值:</span>
-                <span class="time-value">{{ scope.row.early_leave_threshold }}</span>
+              <div class="time-grid">
+                <div class="time-item">
+                  <span class="time-label">签到:</span>
+                  <span class="time-value">{{ scope.row.sign_in_time || '未设置' }}</span>
+                </div>
+                <div class="time-item">
+                  <span class="time-label">签退:</span>
+                  <span class="time-value">{{ scope.row.sign_out_time || '未设置' }}</span>
+                </div>
+                <div class="time-item">
+                  <span class="time-label">迟到阈值:</span>
+                  <span class="time-value">{{ scope.row.late_threshold || '未设置' }}</span>
+                </div>
+                <div class="time-item">
+                  <span class="time-label">缺勤阈值:</span>
+                  <span class="time-value">{{ scope.row.absent_threshold || '未设置' }}</span>
+                </div>
+                <div class="time-item">
+                  <span class="time-label">早退阈值:</span>
+                  <span class="time-value">{{ scope.row.early_leave_threshold || '未设置' }}</span>
+                </div>
+                <div class="time-item">
+                  <span class="time-label">晚退阈值:</span>
+                  <span class="time-value">{{ scope.row.late_leave_threshold || '未设置' }}</span>
+                </div>
               </div>
             </div>
           </template>
@@ -123,7 +129,7 @@
         </el-row>
 
         <el-row :gutter="20">
-          <el-col :span="8">
+          <el-col :span="12">
             <el-form-item label="迟到阈值" prop="late_threshold">
               <el-time-picker
                 v-model="form.late_threshold"
@@ -133,7 +139,7 @@
               />
             </el-form-item>
           </el-col>
-          <el-col :span="8">
+          <el-col :span="12">
             <el-form-item label="缺勤阈值" prop="absent_threshold">
               <el-time-picker
                 v-model="form.absent_threshold"
@@ -143,12 +149,25 @@
               />
             </el-form-item>
           </el-col>
-          <el-col :span="8">
+        </el-row>
+        
+        <el-row :gutter="20">
+          <el-col :span="12">
             <el-form-item label="早退阈值" prop="early_leave_threshold">
               <el-time-picker
                 v-model="form.early_leave_threshold"
                 format="HH:mm"
                 placeholder="选择早退阈值"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="晚退阈值" prop="late_leave_threshold">
+              <el-time-picker
+                v-model="form.late_leave_threshold"
+                format="HH:mm"
+                placeholder="选择晚退阈值"
                 style="width: 100%"
               />
             </el-form-item>
@@ -286,6 +305,7 @@ const form = ref({
   late_threshold: null,
   absent_threshold: null,
   early_leave_threshold: null,
+  late_leave_threshold: null,
   location: '',
   distance_threshold: 100
 })
@@ -312,6 +332,13 @@ const fetchDepartments = async () => {
   try {
     const response = await api.get('/admin/departments')
     departments.value = response.data.departments || []
+    
+    // 调试信息：检查数据结构
+    console.log('部门数据:', departments.value)
+    if (departments.value.length > 0) {
+      console.log('第一个部门的数据:', departments.value[0])
+      console.log('晚退阈值字段:', departments.value[0].late_leave_threshold)
+    }
   } catch (error) {
     console.error('获取部门列表失败:', error)
     const errorMsg = error.response?.data?.msg || error.response?.data?.error || '获取部门列表失败'
@@ -332,6 +359,7 @@ const addDepartment = async () => {
       late_threshold: formatTime(form.value.late_threshold),
       absent_threshold: formatTime(form.value.absent_threshold),
       early_leave_threshold: formatTime(form.value.early_leave_threshold),
+      late_leave_threshold: formatTime(form.value.late_leave_threshold),
       location: form.value.location,
       distance_threshold: form.value.distance_threshold
     }
@@ -361,6 +389,7 @@ const editDepartment = (department) => {
     late_threshold: parseTime(department.late_threshold),
     absent_threshold: parseTime(department.absent_threshold),
     early_leave_threshold: parseTime(department.early_leave_threshold),
+    late_leave_threshold: parseTime(department.late_leave_threshold),
     location: department.location || '',
     distance_threshold: department.distance_threshold || 100
   }
@@ -378,6 +407,7 @@ const updateDepartment = async () => {
       late_threshold: formatTime(form.value.late_threshold),
       absent_threshold: formatTime(form.value.absent_threshold),
       early_leave_threshold: formatTime(form.value.early_leave_threshold),
+      late_leave_threshold: formatTime(form.value.late_leave_threshold),
       location: form.value.location,
       distance_threshold: form.value.distance_threshold
     }
@@ -451,6 +481,7 @@ const resetForm = () => {
     late_threshold: null,
     absent_threshold: null,
     early_leave_threshold: null,
+    late_leave_threshold: null,
     location: '',
     distance_threshold: 100
   }
@@ -666,27 +697,44 @@ onMounted(() => {
   color: #606266;
 }
 
-.time-row {
+.time-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+  padding: 4px 0;
+}
+
+.time-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2px;
-  line-height: 1.4;
+  padding: 2px 8px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  border-left: 3px solid #e6f3ff;
+  min-height: 24px;
 }
 
-.time-row:last-child {
-  margin-bottom: 0;
+.time-item:nth-child(odd) {
+  border-left-color: #409eff;
+}
+
+.time-item:nth-child(even) {
+  border-left-color: #67c23a;
 }
 
 .time-label {
-  color: #909399;
-  min-width: 60px;
+  color: #606266;
   font-weight: 500;
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 .time-value {
   color: #303133;
   font-weight: 600;
+  font-size: 12px;
+  margin-left: 8px;
 }
 
 .location-info {

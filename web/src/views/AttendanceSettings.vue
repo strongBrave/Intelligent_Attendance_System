@@ -85,6 +85,16 @@
             <div class="form-tip">早于此时间签退算作早退</div>
           </el-form-item>
 
+          <el-form-item label="晚退阈值" prop="late_leave_threshold">
+            <el-time-picker
+              v-model="settings.late_leave_threshold"
+              format="HH:mm"
+              placeholder="选择晚退阈值"
+              style="width: 200px;"
+            />
+            <div class="form-tip">超过此时间签退算作晚退</div>
+          </el-form-item>
+
           <el-form-item>
             <el-button type="primary" @click="saveSettings" :loading="saving">
               保存设置
@@ -107,8 +117,9 @@
               <p><strong>正常签到：</strong>在签到时间前完成签到</p>
               <p><strong>迟到：</strong>在签到时间后、迟到阈值前完成签到</p>
               <p><strong>缺勤：</strong>在迟到阈值后、缺勤阈值前完成签到</p>
-              <p><strong>正常签退：</strong>在签退时间后完成签退</p>
+              <p><strong>正常签退：</strong>在签退时间后、晚退阈值前完成签退</p>
               <p><strong>早退：</strong>在早退阈值前完成签退</p>
+              <p><strong>晚退：</strong>在晚退阈值后完成签退</p>
             </div>
           </template>
         </el-alert>
@@ -135,7 +146,8 @@ const settings = ref({
   sign_out_time: null,
   late_threshold: null,
   absent_threshold: null,
-  early_leave_threshold: null
+  early_leave_threshold: null,
+  late_leave_threshold: null
 })
 const formRef = ref()
 
@@ -155,6 +167,9 @@ const rules = {
   ],
   early_leave_threshold: [
     { required: true, message: '请选择早退阈值', trigger: 'change' }
+  ],
+  late_leave_threshold: [
+    { required: true, message: '请选择晚退阈值', trigger: 'change' }
   ]
 }
 
@@ -185,7 +200,8 @@ const fetchDepartmentSettings = async (departmentId) => {
       sign_out_time: parseTimeString(settingsData.sign_out_time),
       late_threshold: parseTimeString(settingsData.late_threshold),
       absent_threshold: parseTimeString(settingsData.absent_threshold),
-      early_leave_threshold: parseTimeString(settingsData.early_leave_threshold)
+      early_leave_threshold: parseTimeString(settingsData.early_leave_threshold),
+      late_leave_threshold: parseTimeString(settingsData.late_leave_threshold)
     }
   } catch (error) {
     console.error('获取打卡时间设置失败:', error)
@@ -221,7 +237,8 @@ const onDepartmentChange = (departmentId) => {
       sign_out_time: null,
       late_threshold: null,
       absent_threshold: null,
-      early_leave_threshold: null
+      early_leave_threshold: null,
+      late_leave_threshold: null
     }
   }
 }
@@ -241,7 +258,8 @@ const saveSettings = async () => {
       sign_out_time: formatTimeString(settings.value.sign_out_time),
       late_threshold: formatTimeString(settings.value.late_threshold),
       absent_threshold: formatTimeString(settings.value.absent_threshold),
-      early_leave_threshold: formatTimeString(settings.value.early_leave_threshold)
+      early_leave_threshold: formatTimeString(settings.value.early_leave_threshold),
+      late_leave_threshold: formatTimeString(settings.value.late_leave_threshold)
     }
     
     await api.put(`/admin/departments/${selectedDepartmentId.value}/attendance-settings`, settingsData)

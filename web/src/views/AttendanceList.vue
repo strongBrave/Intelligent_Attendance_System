@@ -60,6 +60,7 @@
             <el-option label="迟到" value="late" />
             <el-option label="缺勤" value="absent" />
             <el-option label="早退" value="early_leave" />
+            <el-option label="晚退" value="late_leave" />
             <el-option label="未到时间" value="not_yet_time" />
           </el-select>
         </el-form-item>
@@ -123,6 +124,7 @@
                   <el-option label="正常" value="normal" />
                   <el-option label="迟到" value="late" />
                   <el-option label="早退" value="early_leave" />
+                  <el-option label="晚退" value="late_leave" />
                   <el-option label="缺勤" value="absent" />
                   <el-option label="未到时间" value="not_yet_time" />
                 </template>
@@ -300,7 +302,8 @@ const getStatusTag = (status) => {
     'normal': 'success',
     'late': 'warning',
     'absent': 'danger',
-    'early_leave': 'danger'
+    'early_leave': 'danger',
+    'late_leave': 'info'
   }
   return statusMap[status] || 'info'
 }
@@ -311,7 +314,8 @@ const getStatusText = (status) => {
     'normal': '正常',
     'late': '迟到',
     'absent': '缺勤',
-    'early_leave': '早退'
+    'early_leave': '早退',
+    'late_leave': '晚退'
   }
   return statusMap[status] || status
 }
