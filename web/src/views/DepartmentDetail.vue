@@ -86,6 +86,18 @@
         </div>
       </el-card>
 
+      <el-card class="stat-card late-leave">
+        <div class="stat-content">
+          <div class="stat-icon">
+            <el-icon><ArrowRight /></el-icon>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">{{ attendanceDetail.summary.late_leave_count || 0 }}</div>
+            <div class="stat-label">晚退</div>
+          </div>
+        </div>
+      </el-card>
+
       <el-card class="stat-card absent">
         <div class="stat-content">
           <div class="stat-icon">
@@ -148,6 +160,7 @@
                   <el-option label="正常" value="normal" />
                   <el-option label="迟到" value="late" />
                   <el-option label="早退" value="early_leave" />
+                  <el-option label="晚退" value="late_leave" />
                   <el-option label="缺勤" value="absent" />
                   <el-option label="未到时间" value="not_yet_time" />
                 </el-select>
@@ -213,6 +226,7 @@
                   <el-option label="正常" value="normal" />
                   <el-option label="迟到" value="late" />
                   <el-option label="早退" value="early_leave" />
+                  <el-option label="晚退" value="late_leave" />
                   <el-option label="缺勤" value="absent" />
                   <el-option label="未到时间" value="not_yet_time" />
                 </el-select>
@@ -278,6 +292,7 @@
                   <el-option label="正常" value="normal" />
                   <el-option label="迟到" value="late" />
                   <el-option label="早退" value="early_leave" />
+                  <el-option label="晚退" value="late_leave" />
                   <el-option label="缺勤" value="absent" />
                   <el-option label="未到时间" value="not_yet_time" />
                 </el-select>
@@ -343,6 +358,7 @@
                   <el-option label="正常" value="normal" />
                   <el-option label="迟到" value="late" />
                   <el-option label="早退" value="early_leave" />
+                  <el-option label="晚退" value="late_leave" />
                   <el-option label="缺勤" value="absent" />
                   <el-option label="未到时间" value="not_yet_time" />
                 </el-select>
@@ -369,6 +385,72 @@
         <el-empty 
           v-if="!loading && (!attendanceDetail?.early_leave_records || attendanceDetail.early_leave_records.length === 0)" 
           description="暂无早退记录" 
+          :image-size="80"
+        />
+      </el-card>
+
+      <!-- 晚退记录 -->
+      <el-card class="attendance-section">
+        <template #header>
+          <div class="section-header">
+            <span class="section-title">
+              <el-icon><ArrowRight /></el-icon>
+              晚退记录 ({{ attendanceDetail?.late_leave_records?.length || 0 }})
+            </span>
+            <el-tag type="info" size="small">晚退</el-tag>
+          </div>
+        </template>
+
+        <el-table 
+          :data="attendanceDetail?.late_leave_records || []" 
+          border 
+          stripe 
+          v-loading="loading"
+          style="width: 100%"
+        >
+          <el-table-column prop="name" label="员工姓名" width="120" />
+          <el-table-column prop="phone" label="手机号" width="150" />
+          <el-table-column prop="time" label="签退时间" width="180" align="center" />
+          <el-table-column prop="location" label="位置" min-width="150" show-overflow-tooltip />
+          <el-table-column label="状态" width="150" align="center">
+            <template #default="scope">
+              <div class="status-selector">
+                <el-select 
+                  v-model="scope.row.status" 
+                  size="small" 
+                  style="width: 120px"
+                  placeholder="选择状态"
+                >
+                  <el-option label="正常" value="normal" />
+                  <el-option label="迟到" value="late" />
+                  <el-option label="早退" value="early_leave" />
+                  <el-option label="晚退" value="late_leave" />
+                  <el-option label="缺勤" value="absent" />
+                  <el-option label="未到时间" value="not_yet_time" />
+                </el-select>
+                <el-button 
+                  size="small" 
+                  type="primary" 
+                  @click="updateStatus(scope.row)"
+                  style="margin-left: 8px"
+                >
+                  更新
+                </el-button>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="100" align="center">
+            <template #default="scope">
+              <el-button size="small" type="primary" @click="viewDetail(scope.row)">
+                详情
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <el-empty 
+          v-if="!loading && (!attendanceDetail?.late_leave_records || attendanceDetail.late_leave_records.length === 0)" 
+          description="暂无晚退记录" 
           :image-size="80"
         />
       </el-card>
@@ -424,6 +506,7 @@
                     <el-option label="正常" value="normal" />
                     <el-option label="迟到" value="late" />
                     <el-option label="早退" value="early_leave" />
+                    <el-option label="晚退" value="late_leave" />
                     <el-option label="缺勤" value="absent" />
                     <el-option label="未到时间" value="not_yet_time" />
                   </template>
@@ -488,6 +571,7 @@
                   <el-option label="正常" value="normal" />
                   <el-option label="迟到" value="late" />
                   <el-option label="早退" value="early_leave" />
+                  <el-option label="晚退" value="late_leave" />
                   <el-option label="缺勤" value="absent" />
                   <el-option label="未到时间" value="not_yet_time" />
                 </el-select>
@@ -742,6 +826,10 @@ onUnmounted(() => {
 
 .early-leave .stat-icon {
   background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+}
+
+.late-leave .stat-icon {
+  background: linear-gradient(135deg, #845EC2 0%, #b39ddb 100%);
 }
 
 .absent .stat-icon {

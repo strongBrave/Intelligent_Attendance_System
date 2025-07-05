@@ -85,6 +85,30 @@
         </div>
       </el-card>
 
+      <el-card class="summary-card early-leave">
+        <div class="card-content">
+          <div class="card-icon">
+            <el-icon><ArrowDown /></el-icon>
+          </div>
+          <div class="card-info">
+            <div class="card-value">{{ summary.total_early_leave || 0 }}</div>
+            <div class="card-label">早退</div>
+          </div>
+        </div>
+      </el-card>
+
+      <el-card class="summary-card late-leave">
+        <div class="card-content">
+          <div class="card-icon">
+            <el-icon><ArrowRight /></el-icon>
+          </div>
+          <div class="card-info">
+            <div class="card-value">{{ summary.total_late_leave || 0 }}</div>
+            <div class="card-label">晚退</div>
+          </div>
+        </div>
+      </el-card>
+
       <el-card class="summary-card not-yet-time">
         <div class="card-content">
           <div class="card-icon">
@@ -181,6 +205,15 @@
             <div class="stat-cell early-leave">
               <el-icon><ArrowDown /></el-icon>
               <span>{{ scope.row.early_leave_count }}</span>
+            </div>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="late_leave_count" label="晚退人数" width="120" align="center">
+          <template #default="scope">
+            <div class="stat-cell late-leave">
+              <el-icon><ArrowRight /></el-icon>
+              <span>{{ scope.row.late_leave_count || 0 }}</span>
             </div>
           </template>
         </el-table-column>
@@ -366,6 +399,14 @@ onMounted(() => {
   background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
 }
 
+.early-leave .card-icon {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ffa8a8 100%);
+}
+
+.late-leave .card-icon {
+  background: linear-gradient(135deg, #845ec2 0%, #b39ddb 100%);
+}
+
 .not-yet-time .card-icon {
   background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
 }
@@ -452,6 +493,10 @@ onMounted(() => {
 
 .stat-cell.early-leave {
   color: #F56C6C;
+}
+
+.stat-cell.late-leave {
+  color: #845EC2;
 }
 
 .stat-cell.not-yet-time {
