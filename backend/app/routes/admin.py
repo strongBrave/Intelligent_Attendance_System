@@ -648,6 +648,7 @@ def get_dashboard_stats():
         late_count = 0
         absent_count = 0
         early_leave_count = 0
+        late_leave_count = 0
         not_yet_time_count = 0
         
         # 记录已签到的员工ID
@@ -669,6 +670,8 @@ def get_dashboard_stats():
                 signed_out_users.add(attendance.user_id)
                 if attendance.status == 'early_leave':
                     early_leave_count += 1
+                elif attendance.status == 'late_leave':
+                    late_leave_count += 1
                 else:
                     sign_out_count += 1
         
@@ -686,6 +689,7 @@ def get_dashboard_stats():
             'late_count': late_count,
             'absent_count': absent_count,
             'early_leave_count': early_leave_count,
+            'late_leave_count': late_leave_count,
             'not_yet_time_count': not_yet_time_count,
             'attendance_rate': round((len(signed_in_users) / total_employees * 100) if total_employees > 0 else 0, 1)
         })
@@ -697,6 +701,7 @@ def get_dashboard_stats():
     total_late = sum(stat['late_count'] for stat in department_stats)
     total_absent = sum(stat['absent_count'] for stat in department_stats)
     total_early_leave = sum(stat['early_leave_count'] for stat in department_stats)
+    total_late_leave = sum(stat['late_leave_count'] for stat in department_stats)
     total_not_yet_time = sum(stat['not_yet_time_count'] for stat in department_stats)
     
     return jsonify({
@@ -709,6 +714,7 @@ def get_dashboard_stats():
             'total_absent': total_absent,
             'total_early_leave': total_early_leave,
             'total_not_yet_time': total_not_yet_time,
+            'total_late_leave': total_late_leave,
             'overall_attendance_rate': round((total_sign_in / total_employees * 100) if total_employees > 0 else 0, 1)
         }
     })
