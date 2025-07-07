@@ -457,12 +457,10 @@ def get_attendance_records():
             'check_type': record.check_type,
             'status': record.status,
             'time': record.time.strftime('%Y-%m-%d %H:%M:%S') if record.time else None,
-            'location': formatted_location
+            'location': formatted_location,
+            'remark': record.remark or ''  # 返回数据库中的备注字段
         }
         
-        # 为缺勤状态的记录添加备注信息
-        if record.status == 'absent':
-            record_data['remark'] = '今天已签到，但缺勤'
         records.append(record_data)
     
     return jsonify({
