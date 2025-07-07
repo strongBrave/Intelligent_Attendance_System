@@ -134,11 +134,9 @@
         <el-table-column prop="date" label="日期" width="120" align="center" />
         <el-table-column prop="time" label="时间" width="100" align="center" />
         <el-table-column prop="location" label="位置" min-width="150" show-overflow-tooltip />
-        <el-table-column label="操作" width="120" align="center" fixed="right">
+        <el-table-column label="备注" min-width="150" show-overflow-tooltip fixed="right">
           <template #default="scope">
-            <el-button size="small" type="primary" @click="viewDetail(scope.row)">
-              查看详情
-            </el-button>
+            <span>{{ scope.row.remark || '无备注' }}</span>
           </template>
         </el-table-column>
       </el-table>
@@ -318,11 +316,7 @@ const getStatusText = (status) => {
   return statusMap[status] || status
 }
 
-// 查看详情
-const viewDetail = (row) => {
-  console.log('查看详情:', row)
-  // 这里可以添加查看详情的逻辑
-}
+
 
 // 导出数据
 const exportData = () => {
