@@ -291,7 +291,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { 
   Refresh, User, TrendCharts, Clock, Timer, Warning, Close, 
-  ArrowDown, OfficeBuilding 
+  ArrowDown, ArrowRight, CircleClose, OfficeBuilding 
 } from '@element-plus/icons-vue'
 import api from '../api'
 
@@ -432,6 +432,10 @@ onMounted(() => {
   background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
 }
 
+.not-signed-out .card-icon {
+  background: linear-gradient(135deg, #8A2BE2 0%, #9370DB 100%);
+}
+
 .card-info {
   flex: 1;
 }
@@ -522,6 +526,10 @@ onMounted(() => {
 
 .stat-cell.not-signed-in {
   color: #E6A23C;
+}
+
+.stat-cell.not-signed-out {
+  color: #8A2BE2;
 }
 
 .attendance-rate-cell {
