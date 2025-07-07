@@ -120,6 +120,18 @@
           </div>
         </div>
       </el-card>
+
+      <el-card class="summary-card not-signed-out">
+        <div class="card-content">
+          <div class="card-icon">
+            <el-icon><CircleClose /></el-icon>
+          </div>
+          <div class="card-info">
+            <div class="card-value">{{ summary.total_not_signed_out || 0 }}</div>
+            <div class="card-label">未签退</div>
+          </div>
+        </div>
+      </el-card>
     </div>
 
     <!-- 部门考勤统计表格 -->
@@ -223,6 +235,15 @@
             <div class="stat-cell not-signed-in">
               <el-icon><User /></el-icon>
               <span>{{ scope.row.not_signed_in_count }}</span>
+            </div>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="not_signed_out_count" label="未签退" width="120" align="center">
+          <template #default="scope">
+            <div class="stat-cell not-signed-out">
+              <el-icon><CircleClose /></el-icon>
+              <span>{{ scope.row.not_signed_out_count || 0 }}</span>
             </div>
           </template>
         </el-table-column>
@@ -549,4 +570,5 @@ onMounted(() => {
     gap: 16px;
   }
 }
+
 </style> 

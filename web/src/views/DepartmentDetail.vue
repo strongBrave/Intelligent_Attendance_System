@@ -121,19 +121,45 @@
           </div>
         </div>
       </el-card>
+
+      <el-card class="stat-card not-signed-out">
+        <div class="stat-content">
+          <div class="stat-icon">
+            <el-icon><CircleClose /></el-icon>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">{{ attendanceDetail.summary.not_signed_out_count }}</div>
+            <div class="stat-label">未签退</div>
+          </div>
+        </div>
+      </el-card>
     </div>
+
 
     <!-- 考勤数据展示 -->
     <div class="attendance-sections">
-      <!-- 正常签到记录 -->
-      <el-card class="attendance-section">
+      <!-- 签到相关记录 -->
+      <el-card class="attendance-group-card">
+        <template #header>
+          <div class="group-header">
+            <span class="group-title">
+              <el-icon><Clock /></el-icon>
+              签到相关记录
+            </span>
+            <span class="group-subtitle">包括正常签到、迟到、缺勤、未签到等记录</span>
+          </div>
+        </template>
+
+        <div class="group-sections">
+          <!-- 正常签到记录 -->
+          <el-card class="attendance-section sign-in-section">
         <template #header>
           <div class="section-header">
             <span class="section-title">
               <el-icon><Clock /></el-icon>
               正常签到 ({{ attendanceDetail?.sign_in_records?.length || 0 }})
             </span>
-            <el-tag type="primary" size="small">今日</el-tag>
+            <el-tag type="primary" size="small" class="sign-in-tag">今日</el-tag>
           </div>
         </template>
 
@@ -143,6 +169,7 @@
           stripe 
           v-loading="loading"
           style="width: 100%"
+          class="sign-in-table"
         >
           <el-table-column prop="name" label="员工姓名" width="120" />
           <el-table-column prop="phone" label="手机号" width="150" />
@@ -190,80 +217,17 @@
         />
       </el-card>
 
-      <!-- 正常签退记录 -->
-      <el-card class="attendance-section">
-        <template #header>
-          <div class="section-header">
-            <span class="section-title">
-              <el-icon><Timer /></el-icon>
-              正常签退 ({{ attendanceDetail?.sign_out_records?.length || 0 }})
-            </span>
-            <el-tag type="success" size="small">今日</el-tag>
-          </div>
-        </template>
 
-        <el-table 
-          :data="attendanceDetail?.sign_out_records || []" 
-          border 
-          stripe 
-          v-loading="loading"
-          style="width: 100%"
-        >
-          <el-table-column prop="name" label="员工姓名" width="120" />
-          <el-table-column prop="phone" label="手机号" width="150" />
-          <el-table-column prop="time" label="签退时间" width="180" align="center" />
-          <el-table-column prop="location" label="位置" min-width="150" show-overflow-tooltip />
-          <el-table-column label="状态" width="150" align="center">
-            <template #default="scope">
-              <div class="status-selector">
-                <el-select 
-                  v-model="scope.row.status" 
-                  size="small" 
-                  style="width: 120px"
-                  placeholder="选择状态"
-                >
-                  <el-option label="正常" value="normal" />
-                  <el-option label="迟到" value="late" />
-                  <el-option label="早退" value="early_leave" />
-                  <el-option label="晚退" value="late_leave" />
-                  <el-option label="缺勤" value="absent" />
-                </el-select>
-                <el-button 
-                  size="small" 
-                  type="primary" 
-                  @click="updateStatus(scope.row)"
-                  style="margin-left: 8px"
-                >
-                  更新
-                </el-button>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="100" align="center">
-            <template #default="scope">
-              <el-button size="small" type="primary" @click="viewDetail(scope.row)">
-                详情
-              </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-
-        <el-empty 
-          v-if="!loading && (!attendanceDetail?.sign_out_records || attendanceDetail.sign_out_records.length === 0)" 
-          description="暂无正常签退记录" 
-          :image-size="80"
-        />
-      </el-card>
 
       <!-- 迟到记录 -->
-      <el-card class="attendance-section">
+      <el-card class="attendance-section late-section">
         <template #header>
           <div class="section-header">
             <span class="section-title">
               <el-icon><Warning /></el-icon>
               迟到记录 ({{ attendanceDetail?.late_records?.length || 0 }})
             </span>
-            <el-tag type="warning" size="small">迟到</el-tag>
+            <el-tag type="warning" size="small" class="late-tag">迟到</el-tag>
           </div>
         </template>
 
@@ -273,6 +237,7 @@
           stripe 
           v-loading="loading"
           style="width: 100%"
+          class="late-table"
         >
           <el-table-column prop="name" label="员工姓名" width="120" />
           <el-table-column prop="phone" label="手机号" width="150" />
@@ -320,145 +285,19 @@
         />
       </el-card>
 
-      <!-- 早退记录 -->
-      <el-card class="attendance-section">
-        <template #header>
-          <div class="section-header">
-            <span class="section-title">
-              <el-icon><ArrowDown /></el-icon>
-              早退记录 ({{ attendanceDetail?.early_leave_records?.length || 0 }})
-            </span>
-            <el-tag type="danger" size="small">早退</el-tag>
-          </div>
-        </template>
 
-        <el-table 
-          :data="attendanceDetail?.early_leave_records || []" 
-          border 
-          stripe 
-          v-loading="loading"
-          style="width: 100%"
-        >
-          <el-table-column prop="name" label="员工姓名" width="120" />
-          <el-table-column prop="phone" label="手机号" width="150" />
-          <el-table-column prop="time" label="签退时间" width="180" align="center" />
-          <el-table-column prop="location" label="位置" min-width="150" show-overflow-tooltip />
-          <el-table-column label="状态" width="150" align="center">
-            <template #default="scope">
-              <div class="status-selector">
-                <el-select 
-                  v-model="scope.row.status" 
-                  size="small" 
-                  style="width: 120px"
-                  placeholder="选择状态"
-                >
-                  <el-option label="正常" value="normal" />
-                  <el-option label="迟到" value="late" />
-                  <el-option label="早退" value="early_leave" />
-                  <el-option label="晚退" value="late_leave" />
-                  <el-option label="缺勤" value="absent" />
-                </el-select>
-                <el-button 
-                  size="small" 
-                  type="primary" 
-                  @click="updateStatus(scope.row)"
-                  style="margin-left: 8px"
-                >
-                  更新
-                </el-button>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="100" align="center">
-            <template #default="scope">
-              <el-button size="small" type="primary" @click="viewDetail(scope.row)">
-                详情
-              </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
 
-        <el-empty 
-          v-if="!loading && (!attendanceDetail?.early_leave_records || attendanceDetail.early_leave_records.length === 0)" 
-          description="暂无早退记录" 
-          :image-size="80"
-        />
-      </el-card>
 
-      <!-- 晚退记录 -->
-      <el-card class="attendance-section">
-        <template #header>
-          <div class="section-header">
-            <span class="section-title">
-              <el-icon><ArrowRight /></el-icon>
-              晚退记录 ({{ attendanceDetail?.late_leave_records?.length || 0 }})
-            </span>
-            <el-tag type="info" size="small">晚退</el-tag>
-          </div>
-        </template>
-
-        <el-table 
-          :data="attendanceDetail?.late_leave_records || []" 
-          border 
-          stripe 
-          v-loading="loading"
-          style="width: 100%"
-        >
-          <el-table-column prop="name" label="员工姓名" width="120" />
-          <el-table-column prop="phone" label="手机号" width="150" />
-          <el-table-column prop="time" label="签退时间" width="180" align="center" />
-          <el-table-column prop="location" label="位置" min-width="150" show-overflow-tooltip />
-          <el-table-column label="状态" width="150" align="center">
-            <template #default="scope">
-              <div class="status-selector">
-                <el-select 
-                  v-model="scope.row.status" 
-                  size="small" 
-                  style="width: 120px"
-                  placeholder="选择状态"
-                >
-                  <el-option label="正常" value="normal" />
-                  <el-option label="迟到" value="late" />
-                  <el-option label="早退" value="early_leave" />
-                  <el-option label="晚退" value="late_leave" />
-                  <el-option label="缺勤" value="absent" />
-                </el-select>
-                <el-button 
-                  size="small" 
-                  type="primary" 
-                  @click="updateStatus(scope.row)"
-                  style="margin-left: 8px"
-                >
-                  更新
-                </el-button>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="100" align="center">
-            <template #default="scope">
-              <el-button size="small" type="primary" @click="viewDetail(scope.row)">
-                详情
-              </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-
-        <el-empty 
-          v-if="!loading && (!attendanceDetail?.late_leave_records || attendanceDetail.late_leave_records.length === 0)" 
-          description="暂无晚退记录" 
-          :image-size="80"
-        />
-      </el-card>
 
       <!-- 缺勤记录 -->
-      <el-card class="attendance-section">
+      <el-card class="attendance-section absent-section">
         <template #header>
           <div class="section-header">
             <span class="section-title">
               <el-icon><Close /></el-icon>
               缺勤记录 ({{ attendanceDetail?.absent_records?.length || 0 }})
             </span>
-            <el-tag type="danger" size="small">缺勤</el-tag>
+            <el-tag type="danger" size="small" class="absent-tag">缺勤</el-tag>
           </div>
         </template>
 
@@ -468,6 +307,7 @@
           stripe 
           v-loading="loading"
           style="width: 100%"
+          class="absent-table"
         >
           <el-table-column prop="name" label="员工姓名" width="120" />
           <el-table-column prop="phone" label="手机号" width="150" />
@@ -531,14 +371,14 @@
       </el-card>
 
       <!-- 未签到记录 -->
-      <el-card class="attendance-section">
+      <el-card class="attendance-section not-signed-in-section">
         <template #header>
           <div class="section-header">
             <span class="section-title">
               <el-icon><User /></el-icon>
               未签到记录 ({{ attendanceDetail?.not_signed_in_records?.length || 0 }})
             </span>
-            <el-tag type="warning" size="small">未签到</el-tag>
+            <el-tag type="warning" size="small" class="not-signed-in-tag">未签到</el-tag>
           </div>
         </template>
 
@@ -548,6 +388,7 @@
           stripe 
           v-loading="loading"
           style="width: 100%"
+          class="not-signed-in-table"
         >
           <el-table-column prop="name" label="员工姓名" width="120" />
           <el-table-column prop="phone" label="手机号" width="150" />
@@ -599,6 +440,291 @@
           :image-size="80"
         />
       </el-card>
+        </div>
+      </el-card>
+
+      <!-- 签退相关记录 -->
+      <el-card class="attendance-group-card">
+        <template #header>
+          <div class="group-header">
+            <span class="group-title">
+              <el-icon><Timer /></el-icon>
+              签退相关记录
+            </span>
+            <span class="group-subtitle">包括正常签退、早退、晚退、未签退等记录</span>
+          </div>
+        </template>
+
+        <div class="group-sections">
+          <!-- 正常签退记录 -->
+          <el-card class="attendance-section sign-out-section">
+            <template #header>
+              <div class="section-header">
+                <span class="section-title">
+                  <el-icon><Timer /></el-icon>
+                  正常签退 ({{ attendanceDetail?.sign_out_records?.length || 0 }})
+                </span>
+                <el-tag type="success" size="small" class="sign-out-tag">今日</el-tag>
+              </div>
+            </template>
+
+            <el-table 
+              :data="attendanceDetail?.sign_out_records || []" 
+              border 
+              stripe 
+              v-loading="loading"
+              style="width: 100%"
+              class="sign-out-table"
+            >
+              <el-table-column prop="name" label="员工姓名" width="120" />
+              <el-table-column prop="phone" label="手机号" width="150" />
+              <el-table-column prop="time" label="签退时间" width="180" align="center" />
+              <el-table-column prop="location" label="位置" min-width="150" show-overflow-tooltip />
+              <el-table-column label="状态" width="150" align="center">
+                <template #default="scope">
+                  <div class="status-selector">
+                    <el-select 
+                      v-model="scope.row.status" 
+                      size="small" 
+                      style="width: 120px"
+                      placeholder="选择状态"
+                    >
+                      <el-option label="正常" value="normal" />
+                      <el-option label="迟到" value="late" />
+                      <el-option label="早退" value="early_leave" />
+                      <el-option label="晚退" value="late_leave" />
+                      <el-option label="缺勤" value="absent" />
+                    </el-select>
+                    <el-button 
+                      size="small" 
+                      type="primary" 
+                      @click="updateStatus(scope.row)"
+                      style="margin-left: 8px"
+                    >
+                      更新
+                    </el-button>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="100" align="center">
+                <template #default="scope">
+                  <el-button size="small" type="primary" @click="viewDetail(scope.row)">
+                    详情
+                  </el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+
+            <el-empty 
+              v-if="!loading && (!attendanceDetail?.sign_out_records || attendanceDetail.sign_out_records.length === 0)" 
+              description="暂无正常签退记录" 
+              :image-size="80"
+            />
+          </el-card>
+
+          <!-- 早退记录 -->
+          <el-card class="attendance-section early-leave-section">
+            <template #header>
+              <div class="section-header">
+                <span class="section-title">
+                  <el-icon><ArrowDown /></el-icon>
+                  早退记录 ({{ attendanceDetail?.early_leave_records?.length || 0 }})
+                </span>
+                <el-tag type="danger" size="small" class="early-leave-tag">早退</el-tag>
+              </div>
+            </template>
+
+            <el-table 
+              :data="attendanceDetail?.early_leave_records || []" 
+              border 
+              stripe 
+              v-loading="loading"
+              style="width: 100%"
+              class="early-leave-table"
+            >
+              <el-table-column prop="name" label="员工姓名" width="120" />
+              <el-table-column prop="phone" label="手机号" width="150" />
+              <el-table-column prop="time" label="签退时间" width="180" align="center" />
+              <el-table-column prop="location" label="位置" min-width="150" show-overflow-tooltip />
+              <el-table-column label="状态" width="150" align="center">
+                <template #default="scope">
+                  <div class="status-selector">
+                    <el-select 
+                      v-model="scope.row.status" 
+                      size="small" 
+                      style="width: 120px"
+                      placeholder="选择状态"
+                    >
+                      <el-option label="正常" value="normal" />
+                      <el-option label="迟到" value="late" />
+                      <el-option label="早退" value="early_leave" />
+                      <el-option label="晚退" value="late_leave" />
+                      <el-option label="缺勤" value="absent" />
+                    </el-select>
+                    <el-button 
+                      size="small" 
+                      type="primary" 
+                      @click="updateStatus(scope.row)"
+                      style="margin-left: 8px"
+                    >
+                      更新
+                    </el-button>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="100" align="center">
+                <template #default="scope">
+                  <el-button size="small" type="primary" @click="viewDetail(scope.row)">
+                    详情
+                  </el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+
+            <el-empty 
+              v-if="!loading && (!attendanceDetail?.early_leave_records || attendanceDetail.early_leave_records.length === 0)" 
+              description="暂无早退记录" 
+              :image-size="80"
+            />
+          </el-card>
+
+          <!-- 晚退记录 -->
+          <el-card class="attendance-section late-leave-section">
+            <template #header>
+              <div class="section-header">
+                <span class="section-title">
+                  <el-icon><ArrowRight /></el-icon>
+                  晚退记录 ({{ attendanceDetail?.late_leave_records?.length || 0 }})
+                </span>
+                <el-tag type="info" size="small" class="late-leave-tag">晚退</el-tag>
+              </div>
+            </template>
+
+            <el-table 
+              :data="attendanceDetail?.late_leave_records || []" 
+              border 
+              stripe 
+              v-loading="loading"
+              style="width: 100%"
+              class="late-leave-table"
+            >
+              <el-table-column prop="name" label="员工姓名" width="120" />
+              <el-table-column prop="phone" label="手机号" width="150" />
+              <el-table-column prop="time" label="签退时间" width="180" align="center" />
+              <el-table-column prop="location" label="位置" min-width="150" show-overflow-tooltip />
+              <el-table-column label="状态" width="150" align="center">
+                <template #default="scope">
+                  <div class="status-selector">
+                    <el-select 
+                      v-model="scope.row.status" 
+                      size="small" 
+                      style="width: 120px"
+                      placeholder="选择状态"
+                    >
+                      <el-option label="正常" value="normal" />
+                      <el-option label="迟到" value="late" />
+                      <el-option label="早退" value="early_leave" />
+                      <el-option label="晚退" value="late_leave" />
+                      <el-option label="缺勤" value="absent" />
+                    </el-select>
+                    <el-button 
+                      size="small" 
+                      type="primary" 
+                      @click="updateStatus(scope.row)"
+                      style="margin-left: 8px"
+                    >
+                      更新
+                    </el-button>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="100" align="center">
+                <template #default="scope">
+                  <el-button size="small" type="primary" @click="viewDetail(scope.row)">
+                    详情
+                  </el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+
+            <el-empty 
+              v-if="!loading && (!attendanceDetail?.late_leave_records || attendanceDetail.late_leave_records.length === 0)" 
+              description="暂无晚退记录" 
+              :image-size="80"
+            />
+          </el-card>
+
+      <!-- 未签退记录 -->
+      <el-card class="attendance-section not-signed-out-section">
+        <template #header>
+          <div class="section-header">
+            <span class="section-title">
+              <el-icon><CircleClose /></el-icon>
+              未签退记录 ({{ attendanceDetail?.not_signed_out_records?.length || 0 }})
+            </span>
+            <el-tag type="danger" size="small" class="not-signed-out-tag">未签退</el-tag>
+          </div>
+        </template>
+
+        <el-table 
+          :data="attendanceDetail?.not_signed_out_records || []" 
+          border 
+          stripe 
+          v-loading="loading"
+          style="width: 100%"
+          class="not-signed-out-table"
+        >
+          <el-table-column prop="name" label="员工姓名" width="120" />
+          <el-table-column prop="phone" label="手机号" width="150" />
+          <el-table-column prop="sign_in_time" label="签到时间" width="180" align="center">
+            <template #default="scope">
+              <span style="color: #67C23A;">{{ scope.row.sign_in_time }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="location" label="位置" min-width="150" show-overflow-tooltip />
+          <el-table-column label="状态" width="150" align="center">
+            <template #default="scope">
+              <div class="status-selector">
+                <el-select 
+                  v-model="scope.row.status" 
+                  size="small" 
+                  style="width: 120px"
+                  placeholder="选择状态"
+                >
+                  <el-option label="正常" value="normal" />
+                  <el-option label="迟到" value="late" />
+                  <el-option label="早退" value="early_leave" />
+                  <el-option label="晚退" value="late_leave" />
+                  <el-option label="缺勤" value="absent" />
+                </el-select>
+                <el-button 
+                  size="small" 
+                  type="primary" 
+                  @click="updateStatus(scope.row)"
+                  style="margin-left: 8px"
+                >
+                  更新
+                </el-button>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="100" align="center">
+            <template #default="scope">
+              <el-button size="small" type="primary" @click="viewDetail(scope.row)">
+                详情
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <el-empty 
+          v-if="!loading && (!attendanceDetail?.not_signed_out_records || attendanceDetail.not_signed_out_records.length === 0)" 
+          description="暂无未签退记录" 
+          :image-size="80"
+        />
+      </el-card>
+        </div>
+      </el-card>
     </div>
   </div>
 </template>
@@ -609,7 +735,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { 
   ArrowLeft, Clock, Refresh, User, Timer, Warning, Close, 
-  TrendCharts, ArrowDown
+  TrendCharts, ArrowDown, CircleClose, ArrowRight
 } from '@element-plus/icons-vue'
 import api from '../api'
 
@@ -838,6 +964,10 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
 }
 
+.not-signed-out .stat-icon {
+  background: linear-gradient(135deg, #8A2BE2 0%, #9370DB 100%);
+}
+
 .stat-info {
   flex: 1;
 }
@@ -859,12 +989,48 @@ onUnmounted(() => {
 .attendance-sections {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 32px;
+}
+
+.attendance-group-card {
+  border-radius: 16px;
+  box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.12);
+  border: 1px solid #e4e7ed;
+  background: #fff;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.group-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #303133;
+}
+
+.group-subtitle {
+  font-size: 14px;
+  color: #909399;
+  font-weight: 400;
+}
+
+.group-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 16px 0;
 }
 
 .attendance-section {
   border-radius: 12px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .section-header {
@@ -903,6 +1069,336 @@ onUnmounted(() => {
   border-bottom: 1px solid #f0f0f0;
 }
 
+/* 各类型表格专用样式 - 对应仪表盘颜色 */
+
+/* 签到记录 - 蓝色主题 */
+.sign-in-section {
+  background: linear-gradient(135deg, rgba(79, 172, 254, 0.03), rgba(0, 242, 254, 0.03));
+  border: 2px solid rgba(79, 172, 254, 0.2);
+  box-shadow: 0 4px 20px rgba(79, 172, 254, 0.15);
+}
+
+.sign-in-section .section-title {
+  color: #4FACFE;
+  font-weight: 700;
+}
+
+.sign-in-tag {
+  background: linear-gradient(135deg, #4FACFE, #00F2FE);
+  border: none;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(79, 172, 254, 0.3);
+}
+
+.sign-in-table {
+  background: rgba(79, 172, 254, 0.02);
+}
+
+.sign-in-table :deep(.el-table__header) {
+  background: rgba(79, 172, 254, 0.05);
+}
+
+.sign-in-table :deep(.el-table__row:hover) {
+  background: rgba(79, 172, 254, 0.06);
+}
+
+.sign-in-table :deep(.el-table__row:nth-child(odd)) {
+  background: rgba(79, 172, 254, 0.02);
+}
+
+.sign-in-table :deep(.el-table__row:nth-child(even)) {
+  background: rgba(79, 172, 254, 0.04);
+}
+
+/* 签退记录 - 绿色主题 */
+.sign-out-section {
+  background: linear-gradient(135deg, rgba(67, 233, 123, 0.03), rgba(56, 249, 215, 0.03));
+  border: 2px solid rgba(67, 233, 123, 0.2);
+  box-shadow: 0 4px 20px rgba(67, 233, 123, 0.15);
+}
+
+.sign-out-section .section-title {
+  color: #43E97B;
+  font-weight: 700;
+}
+
+.sign-out-tag {
+  background: linear-gradient(135deg, #43E97B, #38F9D7);
+  border: none;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(67, 233, 123, 0.3);
+}
+
+.sign-out-table {
+  background: rgba(67, 233, 123, 0.02);
+}
+
+.sign-out-table :deep(.el-table__header) {
+  background: rgba(67, 233, 123, 0.05);
+}
+
+.sign-out-table :deep(.el-table__row:hover) {
+  background: rgba(67, 233, 123, 0.06);
+}
+
+.sign-out-table :deep(.el-table__row:nth-child(odd)) {
+  background: rgba(67, 233, 123, 0.02);
+}
+
+.sign-out-table :deep(.el-table__row:nth-child(even)) {
+  background: rgba(67, 233, 123, 0.04);
+}
+
+/* 迟到记录 - 橙色主题 */
+.late-section {
+  background: linear-gradient(135deg, rgba(250, 112, 154, 0.03), rgba(254, 225, 64, 0.03));
+  border: 2px solid rgba(250, 112, 154, 0.2);
+  box-shadow: 0 4px 20px rgba(250, 112, 154, 0.15);
+}
+
+.late-section .section-title {
+  color: #FA709A;
+  font-weight: 700;
+}
+
+.late-tag {
+  background: linear-gradient(135deg, #FA709A, #FEE140);
+  border: none;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(250, 112, 154, 0.3);
+}
+
+.late-table {
+  background: rgba(250, 112, 154, 0.02);
+}
+
+.late-table :deep(.el-table__header) {
+  background: rgba(250, 112, 154, 0.05);
+}
+
+.late-table :deep(.el-table__row:hover) {
+  background: rgba(250, 112, 154, 0.06);
+}
+
+.late-table :deep(.el-table__row:nth-child(odd)) {
+  background: rgba(250, 112, 154, 0.02);
+}
+
+.late-table :deep(.el-table__row:nth-child(even)) {
+  background: rgba(250, 112, 154, 0.04);
+}
+
+/* 早退记录 - 红色主题 */
+.early-leave-section {
+  background: linear-gradient(135deg, rgba(255, 154, 158, 0.03), rgba(254, 207, 239, 0.03));
+  border: 2px solid rgba(255, 154, 158, 0.2);
+  box-shadow: 0 4px 20px rgba(255, 154, 158, 0.15);
+}
+
+.early-leave-section .section-title {
+  color: #FF9A9E;
+  font-weight: 700;
+}
+
+.early-leave-tag {
+  background: linear-gradient(135deg, #FF9A9E, #FECFEF);
+  border: none;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(255, 154, 158, 0.3);
+}
+
+.early-leave-table {
+  background: rgba(255, 154, 158, 0.02);
+}
+
+.early-leave-table :deep(.el-table__header) {
+  background: rgba(255, 154, 158, 0.05);
+}
+
+.early-leave-table :deep(.el-table__row:hover) {
+  background: rgba(255, 154, 158, 0.06);
+}
+
+.early-leave-table :deep(.el-table__row:nth-child(odd)) {
+  background: rgba(255, 154, 158, 0.02);
+}
+
+.early-leave-table :deep(.el-table__row:nth-child(even)) {
+  background: rgba(255, 154, 158, 0.04);
+}
+
+/* 晚退记录 - 紫色主题 */
+.late-leave-section {
+  background: linear-gradient(135deg, rgba(132, 94, 194, 0.03), rgba(179, 157, 219, 0.03));
+  border: 2px solid rgba(132, 94, 194, 0.2);
+  box-shadow: 0 4px 20px rgba(132, 94, 194, 0.15);
+}
+
+.late-leave-section .section-title {
+  color: #845EC2;
+  font-weight: 700;
+}
+
+.late-leave-tag {
+  background: linear-gradient(135deg, #845EC2, #B39DDB);
+  border: none;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(132, 94, 194, 0.3);
+}
+
+.late-leave-table {
+  background: rgba(132, 94, 194, 0.02);
+}
+
+.late-leave-table :deep(.el-table__header) {
+  background: rgba(132, 94, 194, 0.05);
+}
+
+.late-leave-table :deep(.el-table__row:hover) {
+  background: rgba(132, 94, 194, 0.06);
+}
+
+.late-leave-table :deep(.el-table__row:nth-child(odd)) {
+  background: rgba(132, 94, 194, 0.02);
+}
+
+.late-leave-table :deep(.el-table__row:nth-child(even)) {
+  background: rgba(132, 94, 194, 0.04);
+}
+
+/* 缺勤记录 - 深红色主题 */
+.absent-section {
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.03), rgba(238, 90, 36, 0.03));
+  border: 2px solid rgba(255, 107, 107, 0.2);
+  box-shadow: 0 4px 20px rgba(255, 107, 107, 0.15);
+}
+
+.absent-section .section-title {
+  color: #FF6B6B;
+  font-weight: 700;
+}
+
+.absent-tag {
+  background: linear-gradient(135deg, #FF6B6B, #EE5A24);
+  border: none;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+}
+
+.absent-table {
+  background: rgba(255, 107, 107, 0.02);
+}
+
+.absent-table :deep(.el-table__header) {
+  background: rgba(255, 107, 107, 0.05);
+}
+
+.absent-table :deep(.el-table__row:hover) {
+  background: rgba(255, 107, 107, 0.06);
+}
+
+.absent-table :deep(.el-table__row:nth-child(odd)) {
+  background: rgba(255, 107, 107, 0.02);
+}
+
+.absent-table :deep(.el-table__row:nth-child(even)) {
+  background: rgba(255, 107, 107, 0.04);
+}
+
+/* 未签到记录 - 黄色主题 */
+.not-signed-in-section {
+  background: linear-gradient(135deg, rgba(255, 234, 167, 0.03), rgba(250, 177, 160, 0.03));
+  border: 2px solid rgba(255, 234, 167, 0.2);
+  box-shadow: 0 4px 20px rgba(255, 234, 167, 0.15);
+}
+
+.not-signed-in-section .section-title {
+  color: #FFEAA7;
+  font-weight: 700;
+}
+
+.not-signed-in-tag {
+  background: linear-gradient(135deg, #FFEAA7, #FAB1A0);
+  border: none;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(255, 234, 167, 0.3);
+}
+
+.not-signed-in-table {
+  background: rgba(255, 234, 167, 0.02);
+}
+
+.not-signed-in-table :deep(.el-table__header) {
+  background: rgba(255, 234, 167, 0.05);
+}
+
+.not-signed-in-table :deep(.el-table__row:hover) {
+  background: rgba(255, 234, 167, 0.06);
+}
+
+.not-signed-in-table :deep(.el-table__row:nth-child(odd)) {
+  background: rgba(255, 234, 167, 0.02);
+}
+
+.not-signed-in-table :deep(.el-table__row:nth-child(even)) {
+  background: rgba(255, 234, 167, 0.04);
+}
+
+/* 未签退记录 - 紫色主题 */
+.not-signed-out-section {
+  background: linear-gradient(135deg, rgba(138, 43, 226, 0.03), rgba(147, 112, 219, 0.03));
+  border: 2px solid rgba(138, 43, 226, 0.2);
+  box-shadow: 0 4px 20px rgba(138, 43, 226, 0.15);
+}
+
+.not-signed-out-section .section-title {
+  color: #8A2BE2;
+  font-weight: 700;
+}
+
+.not-signed-out-tag {
+  background: linear-gradient(135deg, #8A2BE2, #9370DB);
+  border: none;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(138, 43, 226, 0.3);
+}
+
+.not-signed-out-table {
+  background: rgba(138, 43, 226, 0.02);
+}
+
+.not-signed-out-status {
+  background: linear-gradient(135deg, #8A2BE2, #9370DB);
+  color: white;
+  border: none;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(138, 43, 226, 0.3);
+}
+
+.not-signed-out-table :deep(.el-table__header) {
+  background: rgba(138, 43, 226, 0.05);
+}
+
+.not-signed-out-table :deep(.el-table__row:hover) {
+  background: rgba(138, 43, 226, 0.06);
+}
+
+.not-signed-out-table :deep(.el-table__row:nth-child(odd)) {
+  background: rgba(138, 43, 226, 0.02);
+}
+
+.not-signed-out-table :deep(.el-table__row:nth-child(even)) {
+  background: rgba(138, 43, 226, 0.04);
+}
+
 @media (max-width: 768px) {
   .stats-cards {
     grid-template-columns: repeat(2, 1fr);
@@ -911,6 +1407,24 @@ onUnmounted(() => {
   .page-header {
     flex-direction: column;
     align-items: flex-start;
+    gap: 16px;
+  }
+
+  .attendance-sections {
+    gap: 24px;
+  }
+
+  .group-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .group-title {
+    font-size: 18px;
+  }
+
+  .group-sections {
     gap: 16px;
   }
 }
