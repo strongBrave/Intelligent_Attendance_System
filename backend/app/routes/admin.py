@@ -3,6 +3,7 @@ from ..models import User, Department, Attendance, db
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta, time, date
+from sqlalchemy import or_, desc, asc
 import re
 from ..utils import format_location_display
 
@@ -61,12 +62,60 @@ def determine_sign_out_status(dept, attendance_record, current_time_minutes):
 @bp.route('/api/admin/users', methods=['GET'])
 @jwt_required()
 def get_users():
-    """获取所有用户"""
+    """获取所有用户，支持搜索和排序"""
     current_user = User.query.filter_by(id=int(get_jwt_identity())).first()
     if not current_user or current_user.role != 'admin':
         return jsonify({'error': '权限不足'}), 403
     
-    users = User.query.all()
+    # 获取查询参数
+    search = request.args.get('search', '').strip()
+    sort_by = request.args.get('sort_by', 'name')  # 默认按姓名排序
+    sort_order = request.args.get('sort_order', 'asc')  # asc 或 desc
+    
+    # 构建查询
+    query = User.query
+    
+    # 添加搜索条件（姓名或手机号模糊搜索）
+    if search:
+        search_pattern = f'%{search}%'
+        query = query.filter(
+            or_(
+                User.name.like(search_pattern),
+                User.phone.like(search_pattern)
+            )
+        )
+    
+    # 添加排序
+    if sort_by == 'department':
+        # 按部门排序，需要join部门表
+        query = query.outerjoin(Department)
+        if sort_order == 'desc':
+            query = query.order_by(desc(Department.name), asc(User.name))
+        else:
+            query = query.order_by(asc(Department.name), asc(User.name))
+    elif sort_by == 'name':
+        # 按姓名排序
+        if sort_order == 'desc':
+            query = query.order_by(desc(User.name))
+        else:
+            query = query.order_by(asc(User.name))
+    elif sort_by == 'phone':
+        # 按手机号排序
+        if sort_order == 'desc':
+            query = query.order_by(desc(User.phone))
+        else:
+            query = query.order_by(asc(User.phone))
+    elif sort_by == 'role':
+        # 按角色排序
+        if sort_order == 'desc':
+            query = query.order_by(desc(User.role))
+        else:
+            query = query.order_by(asc(User.role))
+    else:
+        # 默认按姓名排序
+        query = query.order_by(asc(User.name))
+    
+    users = query.all()
     user_list = []
     for user in users:
         user_data = {
@@ -74,12 +123,19 @@ def get_users():
             'name': user.name,  # 姓名
             'phone': user.phone,
             'role': user.role,
-            'department': user.department.name if user.department else None,
+            'department': user.department.name if user.department else '未分配',
+            'department_id': user.department_id,
             'created_at': user.created_at.isoformat() if user.created_at else None
         }
         user_list.append(user_data)
     
-    return jsonify({'users': user_list})
+    return jsonify({
+        'users': user_list,
+        'total': len(user_list),
+        'search': search,
+        'sort_by': sort_by,
+        'sort_order': sort_order
+    })
 
 @bp.route('/api/admin/users', methods=['POST'])
 @jwt_required()
