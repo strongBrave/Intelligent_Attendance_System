@@ -5,7 +5,6 @@ import DepartmentDetail from './views/DepartmentDetail.vue'
 import EmployeeList from './views/EmployeeList.vue'
 import EmployeeEdit from './views/EmployeeEdit.vue'
 import AttendanceList from './views/AttendanceList.vue'
-import AttendanceSettings from './views/AttendanceSettings.vue'
 import Login from './views/Login.vue'
 
 const routes = [
@@ -58,12 +57,6 @@ const routes = [
     path: '/attendance',
     name: 'AttendanceList',
     component: AttendanceList,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/attendance-settings',
-    name: 'AttendanceSettings',
-    component: AttendanceSettings,
     meta: { requiresAuth: true }
   }
 ]
