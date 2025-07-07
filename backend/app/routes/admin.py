@@ -623,24 +623,84 @@ def get_dashboard_stats():
     if not current_user or current_user.role != 'admin':
         return jsonify({'error': '权限不足'}), 403
     
-    from datetime import date, datetime
+    from datetime import date, datetime, time
     from sqlalchemy import func
     
     today = date.today()
+    current_time = datetime.now().time()
+    
+    def time_to_minutes(time_str):
+        """将时间字符串转换为分钟数"""
+        if isinstance(time_str, str):
+            hours, minutes = map(int, time_str.split(':'))
+            return hours * 60 + minutes
+        elif isinstance(time_str, time):
+            return time_str.hour * 60 + time_str.minute
+        return 0
+    
+    def determine_sign_in_status(dept, attendance_record, current_time_minutes):
+        """根据时间规则判断签到状态"""
+        late_threshold_minutes = time_to_minutes(dept.late_threshold)
+        absent_threshold_minutes = time_to_minutes(dept.absent_threshold)
+        
+        if attendance_record is None:
+            # 没有签到记录，根据当前时间判断
+            if current_time_minutes > absent_threshold_minutes:
+                return 'absent'
+            elif current_time_minutes > late_threshold_minutes:
+                return 'late'
+            else:
+                return 'not_signed_in'
+        else:
+            # 有签到记录，根据签到时间判断
+            sign_in_minutes = time_to_minutes(attendance_record.time.time())
+            if sign_in_minutes > absent_threshold_minutes:
+                return 'absent'
+            elif sign_in_minutes > late_threshold_minutes:
+                return 'late'
+            else:
+                return 'normal'
+    
+    def determine_sign_out_status(dept, attendance_record):
+        """根据时间规则判断签退状态"""
+        if attendance_record is None:
+            return None  # 没有签退记录不统计
+        
+        early_leave_threshold_minutes = time_to_minutes(dept.early_leave_threshold)
+        late_leave_threshold_minutes = time_to_minutes(dept.late_leave_threshold)
+        sign_out_minutes = time_to_minutes(attendance_record.time.time())
+        
+        if sign_out_minutes < early_leave_threshold_minutes:
+            return 'early_leave'
+        elif sign_out_minutes > late_leave_threshold_minutes:
+            return 'late_leave'
+        else:
+            return 'normal'
     
     # 获取所有部门
     departments = Department.query.all()
     department_stats = []
+    current_time_minutes = time_to_minutes(current_time)
     
     for dept in departments:
-        # 获取部门员工总数
-        total_employees = User.query.filter_by(department_id=dept.id, role='user').count()
+        # 获取部门所有员工
+        employees = User.query.filter_by(department_id=dept.id, role='user').all()
+        total_employees = len(employees)
         
         # 获取今天的考勤记录
-        today_attendances = db.session.query(Attendance).join(User).filter(
-            User.department_id == dept.id,
+        today_attendances = db.session.query(Attendance).filter(
+            Attendance.user_id.in_([emp.id for emp in employees]),
             Attendance.date == today
         ).all()
+        
+        # 按员工ID和类型组织考勤记录
+        sign_in_records = {}
+        sign_out_records = {}
+        for attendance in today_attendances:
+            if attendance.check_type == 'sign_in':
+                sign_in_records[attendance.user_id] = attendance
+            elif attendance.check_type == 'sign_out':
+                sign_out_records[attendance.user_id] = attendance
         
         # 统计各种状态的人数
         sign_in_count = 0
@@ -649,32 +709,36 @@ def get_dashboard_stats():
         absent_count = 0
         early_leave_count = 0
         late_leave_count = 0
-        not_signed_in_count = 0  # 新增：未签到人数
+        not_signed_in_count = 0
         
-        # 记录已签到的员工ID
-        signed_in_users = set()
-        signed_out_users = set()
-        
-        for attendance in today_attendances:
-            if attendance.check_type == 'sign_in':
-                signed_in_users.add(attendance.user_id)
-                if attendance.status == 'late':
-                    late_count += 1
-                elif attendance.status == 'absent':
-                    absent_count += 1
-                else:
-                    sign_in_count += 1
-            elif attendance.check_type == 'sign_out':
-                signed_out_users.add(attendance.user_id)
-                if attendance.status == 'early_leave':
-                    early_leave_count += 1
-                elif attendance.status == 'late_leave':
-                    late_leave_count += 1
-                else:
+        for employee in employees:
+            # 判断签到状态
+            sign_in_record = sign_in_records.get(employee.id)
+            sign_in_status = determine_sign_in_status(dept, sign_in_record, current_time_minutes)
+            
+            if sign_in_status == 'normal':
+                sign_in_count += 1
+            elif sign_in_status == 'late':
+                late_count += 1
+            elif sign_in_status == 'absent':
+                absent_count += 1
+            elif sign_in_status == 'not_signed_in':
+                not_signed_in_count += 1
+            
+            # 判断签退状态（只有已签到的员工才统计签退）
+            if sign_in_record is not None:
+                sign_out_record = sign_out_records.get(employee.id)
+                sign_out_status = determine_sign_out_status(dept, sign_out_record)
+                
+                if sign_out_status == 'normal':
                     sign_out_count += 1
+                elif sign_out_status == 'early_leave':
+                    early_leave_count += 1
+                elif sign_out_status == 'late_leave':
+                    late_leave_count += 1
         
-        # 计算未签到人数（未签到的员工）
-        not_signed_in_count = total_employees - len(signed_in_users)
+        # 计算出勤率（正常签到的比例）
+        attendance_rate = round((sign_in_count / total_employees * 100) if total_employees > 0 else 0, 1)
         
         department_stats.append({
             'department': {
@@ -688,8 +752,8 @@ def get_dashboard_stats():
             'absent_count': absent_count,
             'early_leave_count': early_leave_count,
             'late_leave_count': late_leave_count,
-            'not_signed_in_count': not_signed_in_count,  # 新增：未签到人数
-            'attendance_rate': round((len(signed_in_users) / total_employees * 100) if total_employees > 0 else 0, 1)
+            'not_signed_in_count': not_signed_in_count,
+            'attendance_rate': attendance_rate
         })
     
     # 计算总体统计
@@ -700,7 +764,7 @@ def get_dashboard_stats():
     total_absent = sum(stat['absent_count'] for stat in department_stats)
     total_early_leave = sum(stat['early_leave_count'] for stat in department_stats)
     total_late_leave = sum(stat['late_leave_count'] for stat in department_stats)
-    total_not_signed_in = sum(stat['not_signed_in_count'] for stat in department_stats)  # 新增：未签到总数
+    total_not_signed_in = sum(stat['not_signed_in_count'] for stat in department_stats)
     
     return jsonify({
         'departments': department_stats,
@@ -712,7 +776,7 @@ def get_dashboard_stats():
             'total_absent': total_absent,
             'total_early_leave': total_early_leave,
             'total_late_leave': total_late_leave,
-            'total_not_signed_in': total_not_signed_in,  # 新增：未签到总数
+            'total_not_signed_in': total_not_signed_in,
             'overall_attendance_rate': round((total_sign_in / total_employees * 100) if total_employees > 0 else 0, 1)
         }
     })
@@ -729,14 +793,63 @@ def get_department_attendance_detail(department_id):
     if not department:
         return jsonify({'error': '部门不存在'}), 404
     
-    from datetime import date, datetime
+    from datetime import date, datetime, time
     
     today = date.today()
     current_time = datetime.now().time()
     
+    def time_to_minutes(time_str):
+        """将时间字符串转换为分钟数"""
+        if isinstance(time_str, str):
+            hours, minutes = map(int, time_str.split(':'))
+            return hours * 60 + minutes
+        elif isinstance(time_str, time):
+            return time_str.hour * 60 + time_str.minute
+        return 0
+    
+    def determine_sign_in_status(dept, attendance_record, current_time_minutes):
+        """根据时间规则判断签到状态"""
+        late_threshold_minutes = time_to_minutes(dept.late_threshold)
+        absent_threshold_minutes = time_to_minutes(dept.absent_threshold)
+        
+        if attendance_record is None:
+            # 没有签到记录，根据当前时间判断
+            if current_time_minutes > absent_threshold_minutes:
+                return 'absent'
+            elif current_time_minutes > late_threshold_minutes:
+                return 'late'
+            else:
+                return 'not_signed_in'
+        else:
+            # 有签到记录，根据签到时间判断
+            sign_in_minutes = time_to_minutes(attendance_record.time.time())
+            if sign_in_minutes > absent_threshold_minutes:
+                return 'absent'
+            elif sign_in_minutes > late_threshold_minutes:
+                return 'late'
+            else:
+                return 'normal'
+    
+    def determine_sign_out_status(dept, attendance_record):
+        """根据时间规则判断签退状态"""
+        if attendance_record is None:
+            return None  # 没有签退记录不统计
+        
+        early_leave_threshold_minutes = time_to_minutes(dept.early_leave_threshold)
+        late_leave_threshold_minutes = time_to_minutes(dept.late_leave_threshold)
+        sign_out_minutes = time_to_minutes(attendance_record.time.time())
+        
+        if sign_out_minutes < early_leave_threshold_minutes:
+            return 'early_leave'
+        elif sign_out_minutes > late_leave_threshold_minutes:
+            return 'late_leave'
+        else:
+            return 'normal'
+    
     # 获取部门所有员工
     employees = User.query.filter_by(department_id=department_id, role='user').all()
     employee_ids = [emp.id for emp in employees]
+    current_time_minutes = time_to_minutes(current_time)
     
     # 获取今天的考勤记录
     today_attendances = db.session.query(Attendance).filter(
@@ -744,55 +857,77 @@ def get_department_attendance_detail(department_id):
         Attendance.date == today
     ).all()
     
+    # 按员工ID和类型组织考勤记录
+    sign_in_records_dict = {}
+    sign_out_records_dict = {}
+    for attendance in today_attendances:
+        if attendance.check_type == 'sign_in':
+            sign_in_records_dict[attendance.user_id] = attendance
+        elif attendance.check_type == 'sign_out':
+            sign_out_records_dict[attendance.user_id] = attendance
+    
     # 分类数据
     sign_in_records = []      # 正常签到
     sign_out_records = []     # 正常签退
     late_records = []         # 迟到
     early_leave_records = []  # 早退
+    late_leave_records = []   # 晚退
     absent_records = []       # 缺勤
     not_signed_in_records = [] # 未签到
     
-    # 记录已签到的员工ID
-    signed_in_users = set()
-    signed_out_users = set()    
-    # 处理考勤记录
-    for attendance in today_attendances:
-        user = next((emp for emp in employees if emp.id == attendance.user_id), None)
-        if not user:
-            continue
-            
-        record_data = {
-            'id': attendance.id,
-            'user_id': attendance.user_id,
-            'name': user.name,
-            'phone': user.phone,
-            'time': attendance.time.strftime('%Y-%m-%d %H:%M:%S') if attendance.time else None,
-            'location': format_location_display(attendance.location),
-            'status': attendance.status,
-            'check_type': attendance.check_type
-        }
-        
-        if attendance.check_type == 'sign_in':
-            signed_in_users.add(attendance.user_id)
-            if attendance.status == 'late':
-                late_records.append(record_data)
-            elif attendance.status == 'absent':
-                # 已签到但状态为缺勤的记录，添加备注信息
-                record_data['remark'] = '今天已签到，但缺勤'
-                absent_records.append(record_data)
-            else:
-                sign_in_records.append(record_data)
-        elif attendance.check_type == 'sign_out':
-            signed_out_users.add(attendance.user_id)
-            if attendance.status == 'early_leave':
-                early_leave_records.append(record_data)
-            else:
-                sign_out_records.append(record_data)
-    
-    # 处理未签到的员工
+    # 处理每个员工的考勤状态
     for employee in employees:
-        if employee.id not in signed_in_users:
-            not_signed_in_records.append({
+        sign_in_record = sign_in_records_dict.get(employee.id)
+        sign_out_record = sign_out_records_dict.get(employee.id)
+        
+        # 判断签到状态
+        sign_in_status = determine_sign_in_status(department, sign_in_record, current_time_minutes)
+        
+        # 根据签到状态分类
+        if sign_in_status == 'normal':
+            # 正常签到
+            record_data = {
+                'id': sign_in_record.id,
+                'user_id': employee.id,
+                'name': employee.name,
+                'phone': employee.phone,
+                'time': sign_in_record.time.strftime('%Y-%m-%d %H:%M:%S'),
+                'location': format_location_display(sign_in_record.location),
+                'status': 'normal',
+                'check_type': 'sign_in'
+            }
+            sign_in_records.append(record_data)
+        elif sign_in_status == 'late':
+            # 迟到
+            record_data = {
+                'id': sign_in_record.id if sign_in_record else None,
+                'user_id': employee.id,
+                'name': employee.name,
+                'phone': employee.phone,
+                'time': sign_in_record.time.strftime('%Y-%m-%d %H:%M:%S') if sign_in_record else None,
+                'location': format_location_display(sign_in_record.location) if sign_in_record else None,
+                'status': 'late',
+                'check_type': 'sign_in',
+                'remark': '迟到' if sign_in_record else '未签到，判定为迟到'
+            }
+            late_records.append(record_data)
+        elif sign_in_status == 'absent':
+            # 缺勤
+            record_data = {
+                'id': sign_in_record.id if sign_in_record else None,
+                'user_id': employee.id,
+                'name': employee.name,
+                'phone': employee.phone,
+                'time': sign_in_record.time.strftime('%Y-%m-%d %H:%M:%S') if sign_in_record else None,
+                'location': format_location_display(sign_in_record.location) if sign_in_record else None,
+                'status': 'absent',
+                'check_type': 'sign_in',
+                'remark': '缺勤' if sign_in_record else '未签到，判定为缺勤'
+            }
+            absent_records.append(record_data)
+        elif sign_in_status == 'not_signed_in':
+            # 未签到
+            record_data = {
                 'id': None,
                 'user_id': employee.id,
                 'name': employee.name,
@@ -802,7 +937,54 @@ def get_department_attendance_detail(department_id):
                 'status': 'not_signed_in',
                 'check_type': None,
                 'remark': '今天未签到'
-            })
+            }
+            not_signed_in_records.append(record_data)
+        
+        # 判断签退状态（只有已签到的员工才统计签退）
+        if sign_in_record is not None:
+            sign_out_status = determine_sign_out_status(department, sign_out_record)
+            
+            if sign_out_status == 'normal':
+                # 正常签退
+                record_data = {
+                    'id': sign_out_record.id,
+                    'user_id': employee.id,
+                    'name': employee.name,
+                    'phone': employee.phone,
+                    'time': sign_out_record.time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'location': format_location_display(sign_out_record.location),
+                    'status': 'normal',
+                    'check_type': 'sign_out'
+                }
+                sign_out_records.append(record_data)
+            elif sign_out_status == 'early_leave':
+                # 早退
+                record_data = {
+                    'id': sign_out_record.id,
+                    'user_id': employee.id,
+                    'name': employee.name,
+                    'phone': employee.phone,
+                    'time': sign_out_record.time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'location': format_location_display(sign_out_record.location),
+                    'status': 'early_leave',
+                    'check_type': 'sign_out',
+                    'remark': '早退'
+                }
+                early_leave_records.append(record_data)
+            elif sign_out_status == 'late_leave':
+                # 晚退
+                record_data = {
+                    'id': sign_out_record.id,
+                    'user_id': employee.id,
+                    'name': employee.name,
+                    'phone': employee.phone,
+                    'time': sign_out_record.time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'location': format_location_display(sign_out_record.location),
+                    'status': 'late_leave',
+                    'check_type': 'sign_out',
+                    'remark': '晚退'
+                }
+                late_leave_records.append(record_data)
     
     # 计算统计信息
     total_employees = len(employees)
@@ -810,6 +992,7 @@ def get_department_attendance_detail(department_id):
     sign_out_count = len(sign_out_records)
     late_count = len(late_records)
     early_leave_count = len(early_leave_records)
+    late_leave_count = len(late_leave_records)
     absent_count = len(absent_records)
     not_signed_in_count = len(not_signed_in_records)
     
@@ -823,6 +1006,7 @@ def get_department_attendance_detail(department_id):
         'sign_out_records': sign_out_records,    # 正常签退
         'late_records': late_records,            # 迟到
         'early_leave_records': early_leave_records,  # 早退
+        'late_leave_records': late_leave_records,    # 晚退
         'absent_records': absent_records,        # 缺勤
         'not_signed_in_records': not_signed_in_records,  # 未签到
         'summary': {
@@ -831,6 +1015,7 @@ def get_department_attendance_detail(department_id):
             'sign_out_count': sign_out_count,
             'late_count': late_count,
             'early_leave_count': early_leave_count,
+            'late_leave_count': late_leave_count,
             'absent_count': absent_count,
             'not_signed_in_count': not_signed_in_count
         }
@@ -855,7 +1040,7 @@ def update_attendance_status(attendance_id):
         return jsonify({'error': '状态不能为空'}), 400
     
     # 验证状态值
-    valid_statuses = ['normal', 'late', 'absent', 'early_leave', 'not_signed_in']
+    valid_statuses = ['normal', 'late', 'absent', 'early_leave', 'late_leave', 'not_signed_in']
     if new_status not in valid_statuses:
         return jsonify({'error': '无效的状态值'}), 400
     
@@ -921,9 +1106,9 @@ def makeup_attendance():
             return jsonify({'error': '员工当天未签到，不能补录签退记录'}), 400
         
         # 签退记录只能补录：正常、早退
-        valid_sign_out_statuses = ['normal', 'early_leave']
+        valid_sign_out_statuses = ['normal', 'early_leave', 'late_leave']
         if status not in valid_sign_out_statuses:
-            return jsonify({'error': '签退记录只能补录为正常或早退状态'}), 400
+            return jsonify({'error': '签退记录只能补录为正常、早退或晚退状态'}), 400
 
     # 生成考勤时间 - 统一使用当前修改时间
     dt = datetime.now()  # 使用当前时间作为补录时间
