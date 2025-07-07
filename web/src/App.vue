@@ -68,24 +68,28 @@
         </el-menu-item>
       </el-menu>
       
-      <div class="sidebar-footer">
-        <div class="user-info">
-          <div class="user-avatar">
-            <svg viewBox="0 0 24 24" width="20" height="20">
-              <path fill="currentColor" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
-            </svg>
-          </div>
-          <span class="user-name">管理员</span>
-        </div>
-      </div>
+
     </el-aside>
     
     <el-container>
       <el-header class="main-header">
         <div class="header-left">
           <h1 class="page-title">智慧考勤管理系统</h1>
+          <div class="time-display">
+            <div class="current-time">{{ currentTime }}</div>
+            <div class="current-date">{{ currentDate }}</div>
+          </div>
         </div>
         <div class="header-right">
+          <div class="header-user-info">
+            <div class="header-user-avatar">
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path fill="currentColor" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
+              </svg>
+            </div>
+            <span class="header-user-name">管理员</span>
+          </div>
+          
           <el-button type="text" @click="logout" class="logout-btn">
             <svg class="logout-icon" viewBox="0 0 24 24" width="18" height="18">
               <path fill="currentColor" d="M16,17V14H9V10H16V7L21,12L16,17M14,2A2,2 0 0,1 16,4V6H14V4H5V20H14V18H16V20A2,2 0 0,1 14,22H5A2,2 0 0,1 3,20V4A2,2 0 0,1 5,2H14Z"/>
@@ -101,12 +105,62 @@
   </el-container>
 </template>
 <script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+
 const router = useRouter()
+const currentTime = ref('')
+const currentDate = ref('')
+let timeInterval = null
+
+// 更新时间
+const updateTime = () => {
+  const now = new Date()
+  
+  // 格式化时间 HH:MM:SS
+  currentTime.value = now.toLocaleTimeString('zh-CN', {
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
+  
+  // 格式化日期
+  const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const weekday = weekdays[now.getDay()]
+  
+  currentDate.value = `${year}-${month}-${day} ${weekday}`
+}
+
+// 启动定时器
+const startTimeUpdate = () => {
+  updateTime() // 立即更新一次
+  timeInterval = setInterval(updateTime, 1000) // 每秒更新
+}
+
+// 停止定时器
+const stopTimeUpdate = () => {
+  if (timeInterval) {
+    clearInterval(timeInterval)
+    timeInterval = null
+  }
+}
+
 function logout() {
   localStorage.removeItem('token')
   router.push('/login')
 }
+
+onMounted(() => {
+  startTimeUpdate()
+})
+
+onUnmounted(() => {
+  stopTimeUpdate()
+})
 </script>
 <style>
 body { 
@@ -281,43 +335,7 @@ body {
   color: transparent !important;
 }
 
-.sidebar-footer {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 20px 24px;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(226, 232, 240, 0.8);
-}
 
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background: rgba(248, 250, 252, 0.8);
-  border-radius: 12px;
-  border: 1px solid rgba(226, 232, 240, 0.6);
-}
-
-.user-avatar {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
-.user-name {
-  font-size: 14px;
-  color: #475569;
-  font-weight: 500;
-}
 
 .main-header {
   background: rgba(255, 255, 255, 0.95) !important;
@@ -337,6 +355,7 @@ body {
 .header-left {
   display: flex;
   align-items: center;
+  gap: 32px;
 }
 
 .page-title {
@@ -350,10 +369,65 @@ body {
   letter-spacing: 0.5px;
 }
 
+.time-display {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 8px 16px;
+  background: rgba(102, 126, 234, 0.08);
+  border-radius: 12px;
+  border: 1px solid rgba(102, 126, 234, 0.15);
+  backdrop-filter: blur(10px);
+}
+
+.current-time {
+  font-size: 16px;
+  font-weight: 600;
+  color: #667eea;
+  font-family: 'Courier New', 'Monaco', monospace;
+  line-height: 1.2;
+}
+
+.current-date {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  margin-top: 2px;
+  line-height: 1;
+}
+
 .header-right {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.header-user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(248, 250, 252, 0.8);
+  border-radius: 8px;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  backdrop-filter: blur(10px);
+}
+
+.header-user-avatar {
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.header-user-name {
+  font-size: 13px;
+  color: #475569;
+  font-weight: 500;
 }
 
 .logout-btn {
@@ -383,5 +457,82 @@ body {
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #f8fafc 100%) !important;
   padding: 24px !important;
   min-height: calc(100vh - 64px);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .header-left {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  
+  .page-title {
+    font-size: 18px;
+  }
+  
+  .time-display {
+    padding: 6px 12px;
+  }
+  
+  .current-time {
+    font-size: 14px;
+  }
+  
+  .current-date {
+    font-size: 11px;
+  }
+  
+  .header-right {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  
+  .header-user-info {
+    padding: 6px 10px;
+    order: 2;
+  }
+  
+  .header-user-name {
+    font-size: 12px;
+  }
+  
+  .logout-btn {
+    order: 1;
+    padding: 6px 12px !important;
+  }
+  
+  .main-header {
+    padding: 0 16px !important;
+    height: auto !important;
+    min-height: 64px !important;
+    align-items: flex-start !important;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-left {
+    gap: 8px;
+  }
+  
+  .page-title {
+    font-size: 16px;
+  }
+  
+  .time-display {
+    align-self: flex-end;
+    margin-top: -4px;
+  }
+  
+  .header-right {
+    gap: 6px;
+  }
+  
+  .header-user-name {
+    display: none; /* 在极小屏幕上隐藏用户名，只显示头像 */
+  }
 }
 </style> 
