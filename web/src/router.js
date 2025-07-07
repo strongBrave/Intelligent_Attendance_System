@@ -5,6 +5,7 @@ import DepartmentDetail from './views/DepartmentDetail.vue'
 import EmployeeList from './views/EmployeeList.vue'
 import EmployeeEdit from './views/EmployeeEdit.vue'
 import AttendanceList from './views/AttendanceList.vue'
+import Stats from './views/Stats.vue'
 import Login from './views/Login.vue'
 
 const routes = [
@@ -57,6 +58,12 @@ const routes = [
     path: '/attendance',
     name: 'AttendanceList',
     component: AttendanceList,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/stats',
+    name: 'Stats',
+    component: Stats,
     meta: { requiresAuth: true }
   }
 ]

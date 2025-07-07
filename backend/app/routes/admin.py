@@ -1232,4 +1232,419 @@ def run_auto_attendance_check():
         return jsonify({
             'success': False,
             'error': f'自动考勤检查失败: {str(e)}'
+        }), 500
+
+@bp.route('/api/admin/stats/attendance-distribution', methods=['GET'])
+@jwt_required()
+def get_attendance_distribution():
+    """获取考勤状态分布数据"""
+    current_user = User.query.filter_by(id=int(get_jwt_identity())).first()
+    if not current_user or current_user.role != 'admin':
+        return jsonify({'error': '权限不足'}), 403
+    
+    try:
+        # 获取查询参数
+        date_str = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
+        try:
+            query_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except:
+            query_date = datetime.now().date()
+        
+        # 统计各种考勤状态
+        stats = {}
+        
+        # 统计签到状态
+        sign_in_stats = db.session.query(
+            Attendance.status,
+            db.func.count(Attendance.id)
+        ).filter(
+            Attendance.date == query_date,
+            Attendance.check_type == 'sign_in'
+        ).group_by(Attendance.status).all()
+        
+        # 统计签退状态
+        sign_out_stats = db.session.query(
+            Attendance.status,
+            db.func.count(Attendance.id)
+        ).filter(
+            Attendance.date == query_date,
+            Attendance.check_type == 'sign_out'
+        ).group_by(Attendance.status).all()
+        
+        # 初始化统计数据
+        distribution = {
+            'normal': 0,
+            'late': 0,
+            'absent': 0,
+            'early_leave': 0,
+            'late_leave': 0
+        }
+        
+        # 合并签到统计
+        for status, count in sign_in_stats:
+            if status in distribution:
+                distribution[status] += count
+        
+        # 合并签退统计
+        for status, count in sign_out_stats:
+            if status in distribution:
+                distribution[status] += count
+        
+        # 转换为图表数据格式
+        chart_data = [
+            {'name': '正常', 'value': distribution['normal']},
+            {'name': '迟到', 'value': distribution['late']},
+            {'name': '缺勤', 'value': distribution['absent']},
+            {'name': '早退', 'value': distribution['early_leave']},
+            {'name': '晚退', 'value': distribution['late_leave']}
+        ]
+        
+        return jsonify({
+            'success': True,
+            'date': date_str,
+            'data': chart_data,
+            'total': sum(distribution.values())
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'获取考勤分布数据失败: {str(e)}'
+        }), 500
+
+@bp.route('/api/admin/stats/department-attendance-rate', methods=['GET'])
+@jwt_required()
+def get_department_attendance_rate():
+    """获取部门出勤率对比数据"""
+    current_user = User.query.filter_by(id=int(get_jwt_identity())).first()
+    if not current_user or current_user.role != 'admin':
+        return jsonify({'error': '权限不足'}), 403
+    
+    try:
+        # 获取查询参数
+        date_str = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
+        try:
+            query_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except:
+            query_date = datetime.now().date()
+        
+        departments = Department.query.all()
+        department_stats = []
+        
+        for dept in departments:
+            # 获取部门总员工数
+            total_employees = User.query.filter_by(department_id=dept.id, role='user').count()
+            if total_employees == 0:
+                continue
+            
+            # 获取当日签到人数（正常+迟到）
+            attended_count = Attendance.query.filter(
+                Attendance.date == query_date,
+                Attendance.check_type == 'sign_in',
+                Attendance.status.in_(['normal', 'late']),
+                Attendance.user_id.in_(
+                    db.session.query(User.id).filter_by(department_id=dept.id, role='user')
+                )
+            ).count()
+            
+            # 计算出勤率
+            attendance_rate = round((attended_count / total_employees) * 100, 2)
+            
+            department_stats.append({
+                'department': dept.name,
+                'total_employees': total_employees,
+                'attended_count': attended_count,
+                'attendance_rate': attendance_rate
+            })
+        
+        return jsonify({
+            'success': True,
+            'date': date_str,
+            'data': department_stats
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'获取部门出勤率数据失败: {str(e)}'
+        }), 500
+
+@bp.route('/api/admin/stats/attendance-trend', methods=['GET'])
+@jwt_required()
+def get_attendance_trend():
+    """获取出勤率趋势数据"""
+    current_user = User.query.filter_by(id=int(get_jwt_identity())).first()
+    if not current_user or current_user.role != 'admin':
+        return jsonify({'error': '权限不足'}), 403
+    
+    try:
+        # 获取查询参数（默认查询最近7天）
+        days = int(request.args.get('days', 7))
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=days-1)
+        
+        trend_data = []
+        current_date = start_date
+        
+        while current_date <= end_date:
+            # 跳过周末
+            if current_date.weekday() < 5:  # 周一到周五
+                # 获取总员工数
+                total_employees = User.query.filter_by(role='user').count()
+                
+                if total_employees > 0:
+                    # 获取当日出勤人数
+                    attended_count = Attendance.query.filter(
+                        Attendance.date == current_date,
+                        Attendance.check_type == 'sign_in',
+                        Attendance.status.in_(['normal', 'late'])
+                    ).count()
+                    
+                    # 计算出勤率
+                    attendance_rate = round((attended_count / total_employees) * 100, 2)
+                    
+                    trend_data.append({
+                        'date': current_date.strftime('%Y-%m-%d'),
+                        'weekday': current_date.strftime('%m-%d'),
+                        'attendance_rate': attendance_rate,
+                        'attended_count': attended_count,
+                        'total_employees': total_employees
+                    })
+            
+            current_date += timedelta(days=1)
+        
+        return jsonify({
+            'success': True,
+            'data': trend_data,
+            'period': f'{start_date.strftime("%Y-%m-%d")} 到 {end_date.strftime("%Y-%m-%d")}'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'获取出勤率趋势数据失败: {str(e)}'
+        }), 500
+
+@bp.route('/api/admin/stats/realtime-dashboard', methods=['GET'])
+@jwt_required()
+def get_realtime_dashboard():
+    """获取实时考勤仪表盘数据"""
+    current_user = User.query.filter_by(id=int(get_jwt_identity())).first()
+    if not current_user or current_user.role != 'admin':
+        return jsonify({'error': '权限不足'}), 403
+    
+    try:
+        today = datetime.now().date()
+        current_time = datetime.now()
+        
+        # 总员工数
+        total_employees = User.query.filter_by(role='user').count()
+        
+        # 今日已签到人数
+        signed_in_count = Attendance.query.filter(
+            Attendance.date == today,
+            Attendance.check_type == 'sign_in'
+        ).count()
+        
+        # 今日已签退人数
+        signed_out_count = Attendance.query.filter(
+            Attendance.date == today,
+            Attendance.check_type == 'sign_out'
+        ).count()
+        
+        # 未签到人数
+        not_signed_in_count = total_employees - signed_in_count
+        
+        # 未签退人数（已签到但未签退）
+        not_signed_out_count = signed_in_count - signed_out_count
+        
+        # 迟到人数
+        late_count = Attendance.query.filter(
+            Attendance.date == today,
+            Attendance.check_type == 'sign_in',
+            Attendance.status == 'late'
+        ).count()
+        
+        # 缺勤人数
+        absent_count = Attendance.query.filter(
+            Attendance.date == today,
+            Attendance.check_type == 'sign_in',
+            Attendance.status == 'absent'
+        ).count()
+        
+        # 计算出勤率
+        attendance_rate = round((signed_in_count / total_employees) * 100, 2) if total_employees > 0 else 0
+        
+        # 最近一小时签到数量
+        one_hour_ago = current_time - timedelta(hours=1)
+        recent_sign_ins = Attendance.query.filter(
+            Attendance.check_type == 'sign_in',
+            Attendance.time >= one_hour_ago
+        ).count()
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'total_employees': total_employees,
+                'signed_in_count': signed_in_count,
+                'signed_out_count': signed_out_count,
+                'not_signed_in_count': not_signed_in_count,
+                'not_signed_out_count': not_signed_out_count,
+                'late_count': late_count,
+                'absent_count': absent_count,
+                'attendance_rate': attendance_rate,
+                'recent_sign_ins': recent_sign_ins,
+                'update_time': current_time.strftime('%Y-%m-%d %H:%M:%S')
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'获取实时仪表盘数据失败: {str(e)}'
+        }), 500
+
+@bp.route('/api/admin/stats/location-distribution', methods=['GET'])
+@jwt_required()
+def get_location_distribution():
+    """获取打卡地点分布数据"""
+    current_user = User.query.filter_by(id=int(get_jwt_identity())).first()
+    if not current_user or current_user.role != 'admin':
+        return jsonify({'error': '权限不足'}), 403
+    
+    try:
+        # 获取查询参数
+        date_str = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
+        try:
+            query_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except:
+            query_date = datetime.now().date()
+        
+        # 查询当日所有打卡记录（有位置信息的）
+        attendance_records = Attendance.query.filter(
+            Attendance.date == query_date,
+            Attendance.location != '',
+            Attendance.location.isnot(None)
+        ).all()
+        
+        location_stats = {}
+        location_details = []
+        
+        for record in attendance_records:
+            if record.location:
+                # 解析位置信息
+                location_display = format_location_display(record.location)
+                
+                if location_display not in location_stats:
+                    location_stats[location_display] = 0
+                location_stats[location_display] += 1
+                
+                # 添加详细记录
+                location_details.append({
+                    'user_name': record.user.name,
+                    'location': location_display,
+                    'check_type': record.check_type,
+                    'status': record.status,
+                    'time': record.time.strftime('%H:%M:%S')
+                })
+        
+        # 转换为图表数据格式
+        chart_data = [
+            {'name': location, 'value': count}
+            for location, count in location_stats.items()
+        ]
+        
+        # 按数量排序
+        chart_data.sort(key=lambda x: x['value'], reverse=True)
+        
+        return jsonify({
+            'success': True,
+            'date': date_str,
+            'data': chart_data,
+            'details': location_details,
+            'total_records': len(attendance_records)
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'获取打卡地点分布数据失败: {str(e)}'
+        }), 500
+
+@bp.route('/api/admin/stats/attendance-map', methods=['GET'])
+@jwt_required()
+def get_attendance_map_data():
+    """获取打卡地图数据"""
+    current_user = User.query.filter_by(id=int(get_jwt_identity())).first()
+    if not current_user or current_user.role != 'admin':
+        return jsonify({'error': '权限不足'}), 403
+    
+    try:
+        # 获取查询参数
+        date_str = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
+        try:
+            query_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except:
+            query_date = datetime.now().date()
+        
+        # 查询当日所有打卡记录（有位置信息的）
+        attendance_records = Attendance.query.filter(
+            Attendance.date == query_date,
+            Attendance.location != '',
+            Attendance.location.isnot(None)
+        ).all()
+        
+        # 分类处理签到和签退数据
+        sign_in_data = []  # 签到类：签到、迟到、缺勤
+        sign_out_data = []  # 签退类：签退、早退、晚退
+        
+        for record in attendance_records:
+            if record.location:
+                # 解析经纬度
+                try:
+                    coords_part = record.location.split(' (')[0] if '(' in record.location else record.location
+                    if ',' in coords_part:
+                        lat_str, lng_str = coords_part.split(',')
+                        lat = float(lat_str.strip())
+                        lng = float(lng_str.strip())
+                        
+                        # 获取地址显示
+                        address = record.location.split(' (')[1].rstrip(')') if '(' in record.location else '未知地址'
+                        
+                        # 构建地图点数据
+                        point_data = {
+                            'id': record.id,
+                            'user_name': record.user.name,
+                            'user_id': record.user_id,
+                            'lat': lat,
+                            'lng': lng,
+                            'address': address,
+                            'time': record.time.strftime('%H:%M:%S'),
+                            'status': record.status,
+                            'check_type': record.check_type,
+                            'remark': record.remark or ''
+                        }
+                        
+                        # 分类：签到类包括签到、迟到、缺勤；签退类包括签退、早退、晚退
+                        if record.check_type == 'sign_in':
+                            sign_in_data.append(point_data)
+                        elif record.check_type == 'sign_out':
+                            sign_out_data.append(point_data)
+                            
+                except (ValueError, IndexError) as e:
+                    # 跳过无效的位置数据
+                    continue
+        
+        return jsonify({
+            'success': True,
+            'date': date_str,
+            'sign_in_data': sign_in_data,
+            'sign_out_data': sign_out_data,
+            'total_records': len(sign_in_data) + len(sign_out_data)
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'获取地图数据失败: {str(e)}'
         }), 500 
