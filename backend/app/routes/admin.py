@@ -708,7 +708,7 @@ def get_dashboard_stats():
         for employee in employees:
             # 判断签到状态
             sign_in_record = sign_in_records.get(employee.id)
-            sign_in_status = determine_sign_in_status(dept, sign_in_record, current_time_minutes)
+            sign_in_status, check_type = determine_sign_in_status(dept, sign_in_record, current_time_minutes)
             
             if sign_in_status == 'normal':
                 sign_in_count += 1
@@ -716,13 +716,14 @@ def get_dashboard_stats():
                 late_count += 1
             elif sign_in_status == 'absent':
                 absent_count += 1
-            elif sign_in_status == 'not_signed_in':
+            elif check_type == 'not_signed_in':
+                # 必须用check_type来判断
                 not_signed_in_count += 1
             
             # 判断签退状态（只有已签到的员工才统计签退）
             if sign_in_record is not None:
                 sign_out_record = sign_out_records.get(employee.id)
-                sign_out_status = determine_sign_out_status(dept, sign_out_record, current_time_minutes)
+                sign_out_status, check_type = determine_sign_out_status(dept, sign_out_record, current_time_minutes)
                 
                 if sign_out_status == 'normal':
                     sign_out_count += 1
@@ -730,8 +731,8 @@ def get_dashboard_stats():
                     early_leave_count += 1
                 elif sign_out_status == 'late_leave':
                     late_leave_count += 1
-                elif sign_out_status == 'not_signed_out':
-                    # 已签到但未签退
+                elif check_type == 'not_signed_out':
+                    # 已签到但未签退,必须用check_type来判断
                     not_signed_out_count += 1
         
         # 计算出勤率（正常签到的比例）
@@ -764,7 +765,7 @@ def get_dashboard_stats():
     total_late_leave = sum(stat['late_leave_count'] for stat in department_stats)
     total_not_signed_in = sum(stat['not_signed_in_count'] for stat in department_stats)
     total_not_signed_out = sum(stat['not_signed_out_count'] for stat in department_stats)
-    
+    print(total_absent)
     return jsonify({
         'departments': department_stats,
         'summary': {
