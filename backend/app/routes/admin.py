@@ -1100,4 +1100,136 @@ def get_user_detail(user_id):
         } if user.face_data else None
     }
     
-    return jsonify({'user': user_data}) 
+    return jsonify({'user': user_data})
+
+@bp.route('/api/admin/attendance/auto-check', methods=['POST'])
+@jwt_required()
+def run_auto_attendance_check():
+    """手动执行自动考勤检查"""
+    current_user = User.query.filter_by(id=int(get_jwt_identity())).first()
+    if not current_user or current_user.role != 'admin':
+        return jsonify({'error': '权限不足'}), 403
+    
+    try:
+        today = datetime.now().date()
+        current_time = datetime.now().time()
+        
+        absent_records_created = 0
+        late_leave_records_created = 0
+        details = []
+        
+        # 获取所有部门
+        departments = Department.query.all()
+        
+        for dept in departments:
+            dept_absent_count = 0
+            dept_late_leave_count = 0
+            
+            # 处理缺勤记录
+            if dept.absent_threshold:
+                try:
+                    absent_time = datetime.strptime(dept.absent_threshold, '%H:%M').time()
+                    # 检查当前时间是否超过缺勤阈值
+                    if current_time >= absent_time:
+                        # 获取该部门所有员工
+                        employees = User.query.filter_by(department_id=dept.id, role='user').all()
+                        
+                        for employee in employees:
+                            # 检查今天是否已有签到记录
+                            existing_sign_in = Attendance.query.filter_by(
+                                user_id=employee.id,
+                                date=today,
+                                check_type='sign_in'
+                            ).first()
+                            
+                            if not existing_sign_in:
+                                # 没有签到记录，创建缺勤记录
+                                absent_record = Attendance(
+                                    user_id=employee.id,
+                                    date=today,
+                                    check_type='sign_in',
+                                    status='absent',
+                                    time=datetime.combine(today, absent_time),
+                                    location='',
+                                    remark=f'[系统自动]: 超过缺勤时间({dept.absent_threshold})未签到，自动标记为缺勤'
+                                )
+                                
+                                db.session.add(absent_record)
+                                absent_records_created += 1
+                                dept_absent_count += 1
+                                
+                except ValueError:
+                    continue
+            
+            # 处理晚退记录
+            if dept.late_leave_threshold:
+                try:
+                    late_leave_time = datetime.strptime(dept.late_leave_threshold, '%H:%M').time()
+                    # 检查当前时间是否超过晚退阈值
+                    if current_time >= late_leave_time:
+                        # 获取该部门所有员工
+                        employees = User.query.filter_by(department_id=dept.id, role='user').all()
+                        
+                        for employee in employees:
+                            # 检查今天是否已有签到记录
+                            existing_sign_in = Attendance.query.filter_by(
+                                user_id=employee.id,
+                                date=today,
+                                check_type='sign_in'
+                            ).first()
+                            
+                            # 只有已签到的员工才处理晚退
+                            if existing_sign_in:
+                                # 检查今天是否已有签退记录
+                                existing_sign_out = Attendance.query.filter_by(
+                                    user_id=employee.id,
+                                    date=today,
+                                    check_type='sign_out'
+                                ).first()
+                                
+                                if not existing_sign_out:
+                                    # 没有签退记录，创建晚退记录
+                                    late_leave_record = Attendance(
+                                        user_id=employee.id,
+                                        date=today,
+                                        check_type='sign_out',
+                                        status='late_leave',
+                                        time=datetime.combine(today, late_leave_time),
+                                        location='',
+                                        remark=f'[系统自动]: 超过晚退时间({dept.late_leave_threshold})未签退，自动标记为晚退'
+                                    )
+                                    
+                                    db.session.add(late_leave_record)
+                                    late_leave_records_created += 1
+                                    dept_late_leave_count += 1
+                                    
+                except ValueError:
+                    continue
+            
+            # 记录部门详情
+            if dept_absent_count > 0 or dept_late_leave_count > 0:
+                details.append({
+                    'department': dept.name,
+                    'absent_count': dept_absent_count,
+                    'late_leave_count': dept_late_leave_count
+                })
+        
+        # 提交所有更改
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '自动考勤检查完成',
+            'absent_records_created': absent_records_created,
+            'late_leave_records_created': late_leave_records_created,
+            'total_records_created': absent_records_created + late_leave_records_created,
+            'details': details,
+            'check_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': f'自动考勤检查失败: {str(e)}'
+        }), 500 

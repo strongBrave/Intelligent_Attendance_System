@@ -4,12 +4,41 @@
     <div class="page-header">
       <h1>考勤仪表盘</h1>
       <div class="header-actions">
+        <el-button type="success" @click="runAutoCheck" :loading="autoCheckLoading">
+          <el-icon><Check /></el-icon>
+          自动考勤检查
+        </el-button>
         <el-button type="primary" @click="refreshData" :loading="loading">
           <el-icon><Refresh /></el-icon>
           刷新数据
         </el-button>
       </div>
     </div>
+
+    <!-- 自动考勤检查结果 -->
+    <el-alert
+      v-if="autoCheckResult"
+      :title="autoCheckResult.title"
+      :type="autoCheckResult.type"
+      :description="autoCheckResult.description"
+      :closable="true"
+      @close="autoCheckResult = null"
+      class="auto-check-alert"
+    >
+      <template #default v-if="autoCheckResult.details && autoCheckResult.details.length > 0">
+        <div class="check-details">
+          <h4>处理详情：</h4>
+          <div class="detail-list">
+            <div v-for="detail in autoCheckResult.details" :key="detail.department" class="detail-item">
+              <el-tag type="info">{{ detail.department }}</el-tag>
+              <span v-if="detail.absent_count > 0">缺勤记录: {{ detail.absent_count }}条</span>
+              <span v-if="detail.late_leave_count > 0">晚退记录: {{ detail.late_leave_count }}条</span>
+            </div>
+          </div>
+          <p class="check-time">检查时间: {{ autoCheckResult.check_time }}</p>
+        </div>
+      </template>
+    </el-alert>
 
     <!-- 总体统计卡片 -->
     <div class="summary-cards" v-if="summary">
@@ -291,7 +320,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { 
   Refresh, User, TrendCharts, Clock, Timer, Warning, Close, 
-  ArrowDown, ArrowRight, CircleClose, OfficeBuilding 
+  ArrowDown, ArrowRight, CircleClose, OfficeBuilding, Check 
 } from '@element-plus/icons-vue'
 import api from '../api'
 
@@ -299,6 +328,8 @@ const router = useRouter()
 const loading = ref(false)
 const departments = ref([])
 const summary = ref(null)
+const autoCheckLoading = ref(false)
+const autoCheckResult = ref(null)
 
 // 获取仪表盘数据
 const fetchDashboardData = async () => {
@@ -334,6 +365,68 @@ const getProgressColor = (rate) => {
   return '#909399'  // 灰色
 }
 
+// 执行自动考勤检查
+const runAutoCheck = async () => {
+  autoCheckLoading.value = true
+  autoCheckResult.value = null
+  
+  try {
+    const response = await api.post('/admin/attendance/auto-check')
+    const data = response.data
+    
+    if (data.success) {
+      const totalRecords = data.total_records_created || 0
+      
+      if (totalRecords === 0) {
+        autoCheckResult.value = {
+          title: '自动考勤检查完成',
+          type: 'info',
+          description: data.message || '没有需要处理的考勤记录',
+          details: data.details || [],
+          check_time: data.check_time
+        }
+      } else {
+        autoCheckResult.value = {
+          title: `自动考勤检查完成 - 共创建 ${totalRecords} 条记录`,
+          type: 'success',
+          description: `成功创建 ${data.absent_records_created || 0} 条缺勤记录，${data.late_leave_records_created || 0} 条晚退记录`,
+          details: data.details || [],
+          check_time: data.check_time
+        }
+        
+        // 自动刷新仪表盘数据
+        await fetchDashboardData()
+      }
+      
+      ElMessage.success('自动考勤检查完成')
+    } else {
+      autoCheckResult.value = {
+        title: '自动考勤检查失败',
+        type: 'error',
+        description: data.error || '检查过程中发生错误',
+        details: [],
+        check_time: new Date().toLocaleString()
+      }
+      ElMessage.error(data.error || '自动考勤检查失败')
+    }
+  } catch (error) {
+    console.error('自动考勤检查失败:', error)
+    const errorMsg = error.response?.data?.error || '请求失败'
+    
+    autoCheckResult.value = {
+      title: '自动考勤检查失败',
+      type: 'error',
+      description: errorMsg,
+      details: [],
+      check_time: new Date().toLocaleString()
+    }
+    
+    ElMessage.error(errorMsg)
+  } finally {
+    autoCheckLoading.value = false
+  }
+}
+
 onMounted(() => {
   fetchDashboardData()
 })
@@ -358,6 +451,55 @@ onMounted(() => {
   color: #303133;
   font-size: 28px;
   font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.auto-check-alert {
+  margin-bottom: 24px;
+  border-radius: 8px;
+}
+
+.check-details {
+  margin-top: 12px;
+}
+
+.check-details h4 {
+  margin: 0 0 8px 0;
+  color: #303133;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #f5f7fa;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.detail-item span {
+  color: #606266;
+}
+
+.check-time {
+  margin: 0;
+  font-size: 12px;
+  color: #909399;
+  text-align: right;
 }
 
 .summary-cards {
