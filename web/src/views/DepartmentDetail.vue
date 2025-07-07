@@ -798,8 +798,10 @@ const updateStatus = async (record) => {
       const res = await api.post('/admin/attendance/makeup', {
         user_id: record.user_id,
         date: today,
-        check_type: 'sign_in', // 默认补录为签到
-        status: record.status
+        check_type: record.check_type, 
+        status: record.status,
+        location: record.location,
+        time: record.time
       })
       ElMessage.success('补录成功')
       await fetchAttendanceDetail()
