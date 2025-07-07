@@ -849,11 +849,13 @@ def get_department_attendance_detail(department_id):
                 'time': sign_in_record.time.strftime('%Y-%m-%d %H:%M:%S'),
                 'location': format_location_display(sign_in_record.location),
                 'status': 'normal',
-                'check_type': check_type
+                'check_type': check_type,
+                'remark': sign_in_record.remark or '正常签到'
             }
             sign_in_records.append(record_data)
         elif sign_in_status == 'late':
             # 迟到
+            default_remark = '迟到' if check_type == 'sign_in' else '未签到，当前时间已经处于迟到时间，判定为迟到'
             record_data = {
                 'id': sign_in_record.id if sign_in_record else None,
                 'user_id': employee.id,
@@ -863,11 +865,12 @@ def get_department_attendance_detail(department_id):
                 'location': format_location_display(sign_in_record.location) if sign_in_record else None,
                 'status': 'late',
                 'check_type': check_type,
-                'remark': '迟到' if check_type == 'sign_in' else '未签到，当前时间已经处于迟到时间，判定为迟到'
+                'remark': (sign_in_record.remark if sign_in_record and sign_in_record.remark else default_remark)
             }
             late_records.append(record_data)
         elif sign_in_status == 'absent':
             # 缺勤
+            default_remark = '缺勤' if check_type == 'sign_in' else '未签到，当前时间已经处于缺勤时间，判定为缺勤'
             record_data = {
                 'id': sign_in_record.id if sign_in_record else None,
                 'user_id': employee.id,
@@ -877,7 +880,7 @@ def get_department_attendance_detail(department_id):
                 'location': format_location_display(sign_in_record.location) if sign_in_record else None,
                 'status': 'absent',
                 'check_type': check_type,
-                'remark': '缺勤' if check_type == 'sign_in' else '未签到，当前时间已经处于缺勤时间，判定为缺勤'
+                'remark': (sign_in_record.remark if sign_in_record and sign_in_record.remark else default_remark)
             }
             absent_records.append(record_data)
         elif sign_in_status == 'not_signed_in':
@@ -909,7 +912,8 @@ def get_department_attendance_detail(department_id):
                     'time': sign_out_record.time.strftime('%Y-%m-%d %H:%M:%S'),
                     'location': format_location_display(sign_out_record.location),
                     'status': 'normal',
-                    'check_type': check_type
+                    'check_type': check_type,
+                    'remark': sign_out_record.remark or '正常签退'
                 }
                 sign_out_records.append(record_data)
             elif sign_out_status == 'early_leave':
@@ -923,11 +927,12 @@ def get_department_attendance_detail(department_id):
                     'location': format_location_display(sign_out_record.location),
                     'status': 'early_leave',
                     'check_type': check_type,
-                    'remark': '早退'
+                    'remark': sign_out_record.remark or '早退'
                 }
                 early_leave_records.append(record_data)
             elif sign_out_status == 'late_leave':
                 # 晚退
+                default_remark = '晚退' if check_type == 'sign_out' else '未签退，当前时间已经处于晚退时间，判定为晚退'
                 record_data = {
                     'id': sign_out_record.id,
                     'user_id': employee.id,
@@ -937,7 +942,7 @@ def get_department_attendance_detail(department_id):
                     'location': format_location_display(sign_out_record.location),
                     'status': 'late_leave',
                     'check_type': check_type,
-                    'remark': '晚退' if check_type == 'sign_out' else '未签退，当前时间已经处于晚退时间，判定为晚退'
+                    'remark': sign_out_record.remark or default_remark
                 }
                 late_leave_records.append(record_data)
             elif sign_out_status == 'not_signed_out':
@@ -1032,9 +1037,14 @@ def update_attendance_status(attendance_id):
     else:
         return jsonify({'error': f'不支持的考勤类型: {attendance.check_type}'}), 400
     
+    # 保存原状态用于记录
+    old_status = attendance.status
+    
     # 更新状态和时间
     attendance.status = new_status
-    attendance.time = datetime.now()  # 更新为当前修改时间
+    current_time = datetime.now()
+    attendance.time = current_time
+    attendance.remark = f"[状态更新]: 从{old_status}更新为{new_status}, 更新时间: {current_time.strftime('%Y-%m-%d %H:%M:%S')}"
     db.session.commit()
     
     return jsonify({
@@ -1044,7 +1054,6 @@ def update_attendance_status(attendance_id):
             'user_id': attendance.user_id,
             'status': attendance.status,
             'check_type': attendance.check_type,
-            'remark': f"[状态更新]: 将{attendance.status}状态更新为{new_status}, 更改时间为{attendance.time.strftime('%Y-%m-%d %H:%M:%S')}"
         }
     })
 
@@ -1126,14 +1135,17 @@ def makeup_attendance():
     elif check_type == 'not_signed_out':
         real_check_type = 'sign_out'
     
-    print(status)
+    # 创建remark描述
+    remark_text = f"[补录]: 补录{real_check_type}记录，状态为{status}，补录时间: {dt.strftime('%Y-%m-%d %H:%M:%S')}"
+    
     attendance = Attendance(
         user_id=user_id,
         date=date_obj,
         check_type=real_check_type,
         status=status,
         time=dt,
-        location=location or ''
+        location=location or '',
+        remark=remark_text,
     )
     db.session.add(attendance)
     db.session.commit()
@@ -1149,7 +1161,6 @@ def makeup_attendance():
             'status': attendance.status,
             'time': attendance.time.strftime('%Y-%m-%d %H:%M:%S'),
             'location': attendance.location,
-            'remark': f"[补录]: 将{status}状态更新为{attendance.status}, 更改时间为{attendance.time.strftime('%Y-%m-%d %H:%M:%S')}"
         }
     })
 
