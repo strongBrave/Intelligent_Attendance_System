@@ -63,6 +63,7 @@ class Attendance(db.Model):
     # 存储考勤时的人脸特征向量，用于后续验证
     check_face_features = db.Column(db.Text)  # JSON格式存储512维特征向量
     similarity_score = db.Column(db.Float)    # 相似度分数
+    remark = db.Column(db.String(256))        # 备注信息，用于标记补录、状态更新等操作
     user = db.relationship('User', backref='attendances')
     
     def set_check_features(self, features):
