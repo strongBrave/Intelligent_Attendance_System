@@ -32,11 +32,10 @@ def determine_sign_in_status(dept, attendance_record, current_time_minutes):
         else:
             return ['not_signed_in', 'not_signed_in']
     else:
-        # 有签到记录，根据签到时间判断
-        sign_in_minutes = time_to_minutes(attendance_record.time.time())
-        if sign_in_minutes > absent_threshold_minutes:
+        # 有签到记录，根据status判断
+        if attendance_record.status == 'absent':
             return ['absent', 'sign_in']
-        elif sign_in_minutes > late_threshold_minutes and sign_in_minutes <= absent_threshold_minutes:
+        elif attendance_record.status == 'late':
             return ['late', 'sign_in']
         else:
             return ['normal', 'sign_in']
@@ -52,11 +51,9 @@ def determine_sign_out_status(dept, attendance_record, current_time_minutes):
         else:
             return ['not_signed_out', 'not_signed_out']
     else:
-        sign_out_minutes = time_to_minutes(attendance_record.time.time())
-        
-        if sign_out_minutes < early_leave_threshold_minutes:
+        if attendance_record.status == 'early_leave':
             return ['early_leave', 'sign_out']
-        elif sign_out_minutes > late_leave_threshold_minutes:
+        elif attendance_record.status == 'late_leave':
             return ['late_leave', 'sign_out']
         else:
             return ['normal', 'sign_out']
