@@ -863,7 +863,7 @@ def get_department_attendance_detail(department_id):
                 'location': format_location_display(sign_in_record.location) if sign_in_record else None,
                 'status': 'late',
                 'check_type': check_type,
-                'remark': '迟到' if sign_in_record else '未签到，判定为迟到'
+                'remark': '迟到' if check_type == 'sign_in' else '未签到，当前时间已经处于迟到时间，判定为迟到'
             }
             late_records.append(record_data)
         elif sign_in_status == 'absent':
@@ -877,7 +877,7 @@ def get_department_attendance_detail(department_id):
                 'location': format_location_display(sign_in_record.location) if sign_in_record else None,
                 'status': 'absent',
                 'check_type': check_type,
-                'remark': '缺勤' if sign_in_record else '未签到，判定为缺勤'
+                'remark': '缺勤' if check_type == 'sign_in' else '未签到，当前时间已经处于缺勤时间，判定为缺勤'
             }
             absent_records.append(record_data)
         elif sign_in_status == 'not_signed_in':
@@ -891,7 +891,7 @@ def get_department_attendance_detail(department_id):
                 'location': None,
                 'status': 'not_signed_in',
                 'check_type': check_type,  # 统一命名
-                'remark': '今天未签到'
+                'remark': '今天还未签到'
             }
             not_signed_in_records.append(record_data)
         
@@ -937,22 +937,7 @@ def get_department_attendance_detail(department_id):
                     'location': format_location_display(sign_out_record.location),
                     'status': 'late_leave',
                     'check_type': check_type,
-                    'remark': '晚退'
-                }
-                late_leave_records.append(record_data)
-            elif sign_out_status == 'late_leave':
-                # 未签退但超时，判定为晚退
-                record_data = {
-                    'id': None,  # 虚拟记录，没有实际ID
-                    'user_id': employee.id,
-                    'name': employee.name,
-                    'phone': employee.phone,
-                    'time': None,
-                    'location': None,
-                    'status': 'late_leave',
-                    'check_type':check_type,  # 虚拟类型
-                    'remark': '未签退，超时判定为晚退',
-                    'remark': '未签退，超时判定为晚退' if check_type == 'not_signed_out' else "已签退，但已超时"
+                    'remark': '晚退' if check_type == 'sign_out' else '未签退，当前时间已经处于晚退时间，判定为晚退'
                 }
                 late_leave_records.append(record_data)
             elif sign_out_status == 'not_signed_out':
@@ -966,7 +951,7 @@ def get_department_attendance_detail(department_id):
                     'location': None,
                     'status': 'not_signed_out',
                     'check_type': check_type,  # 统一命名
-                    'remark': '已签到但未签退'
+                    'remark': '已签到但还未签退'
                 }
                 not_signed_out_records.append(record_data)
     
@@ -1058,7 +1043,8 @@ def update_attendance_status(attendance_id):
             'id': attendance.id,
             'user_id': attendance.user_id,
             'status': attendance.status,
-            'check_type': attendance.check_type
+            'check_type': attendance.check_type,
+            'remark': f"[状态更新]: 将{attendance.status}状态更新为{new_status}, 更改时间为{attendance.time.strftime('%Y-%m-%d %H:%M:%S')}"
         }
     })
 
@@ -1162,7 +1148,8 @@ def makeup_attendance():
             'real_check_type': attendance.check_type,  # 实际存储的check_type
             'status': attendance.status,
             'time': attendance.time.strftime('%Y-%m-%d %H:%M:%S'),
-            'location': attendance.location
+            'location': attendance.location,
+            'remark': f"[补录]: 将{status}状态更新为{attendance.status}, 更改时间为{attendance.time.strftime('%Y-%m-%d %H:%M:%S')}"
         }
     })
 

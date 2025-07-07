@@ -201,11 +201,9 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="100" align="center">
+          <el-table-column label="备注" min-width="150" show-overflow-tooltip>
             <template #default="scope">
-              <el-button size="small" type="primary" @click="viewDetail(scope.row)">
-                详情
-              </el-button>
+              <span>{{ scope.row.remark || '无备注' }}</span>
             </template>
           </el-table-column>
         </el-table>
@@ -269,11 +267,9 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="100" align="center">
+          <el-table-column label="备注" min-width="150" show-overflow-tooltip>
             <template #default="scope">
-              <el-button size="small" type="primary" @click="viewDetail(scope.row)">
-                详情
-              </el-button>
+              <span>{{ scope.row.remark || '无备注' }}</span>
             </template>
           </el-table-column>
         </el-table>
@@ -356,11 +352,11 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="备注" min-width="200">
-            <template #default>
-              <span style="color: #909399;">今日未签到</span>
-            </template>
-          </el-table-column>
+                      <el-table-column label="备注" min-width="200">
+              <template #default="scope">
+                <span style="color: #909399;">{{ scope.row.remark || '缺勤' }}</span>
+              </template>
+            </el-table-column>
         </el-table>
 
         <el-empty 
@@ -506,11 +502,9 @@
                   </div>
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="100" align="center">
+              <el-table-column label="备注" min-width="150" show-overflow-tooltip>
                 <template #default="scope">
-                  <el-button size="small" type="primary" @click="viewDetail(scope.row)">
-                    详情
-                  </el-button>
+                  <span>{{ scope.row.remark || '无备注' }}</span>
                 </template>
               </el-table-column>
             </el-table>
@@ -572,11 +566,9 @@
                   </div>
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="100" align="center">
+              <el-table-column label="备注" min-width="150" show-overflow-tooltip>
                 <template #default="scope">
-                  <el-button size="small" type="primary" @click="viewDetail(scope.row)">
-                    详情
-                  </el-button>
+                  <span>{{ scope.row.remark || '无备注' }}</span>
                 </template>
               </el-table-column>
             </el-table>
@@ -636,13 +628,11 @@
                       更新
                     </el-button>
                   </div>
-                </template>
+                                  </template>
               </el-table-column>
-              <el-table-column label="操作" width="100" align="center">
+              <el-table-column label="备注" min-width="150" show-overflow-tooltip>
                 <template #default="scope">
-                  <el-button size="small" type="primary" @click="viewDetail(scope.row)">
-                    详情
-                  </el-button>
+                  <span>{{ scope.row.remark || '无备注' }}</span>
                 </template>
               </el-table-column>
             </el-table>
@@ -708,11 +698,9 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="100" align="center">
+          <el-table-column label="备注" min-width="150" show-overflow-tooltip>
             <template #default="scope">
-              <el-button size="small" type="primary" @click="viewDetail(scope.row)">
-                详情
-              </el-button>
+              <span>{{ scope.row.remark || '无备注' }}</span>
             </template>
           </el-table-column>
         </el-table>
@@ -836,11 +824,7 @@ const refreshData = () => {
   fetchAttendanceDetail()
 }
 
-// 查看详情
-const viewDetail = (row) => {
-  console.log('查看详情:', row)
-  // 这里可以添加查看详情的逻辑
-}
+
 
 onMounted(() => {
   updateCurrentTime()
