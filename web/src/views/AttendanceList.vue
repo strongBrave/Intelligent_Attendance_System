@@ -61,7 +61,6 @@
             <el-option label="缺勤" value="absent" />
             <el-option label="早退" value="early_leave" />
             <el-option label="晚退" value="late_leave" />
-            <el-option label="未到时间" value="not_yet_time" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -126,7 +125,6 @@
                   <el-option label="早退" value="early_leave" />
                   <el-option label="晚退" value="late_leave" />
                   <el-option label="缺勤" value="absent" />
-                  <el-option label="未到时间" value="not_yet_time" />
                 </template>
               </el-select>
               <el-button size="small" type="primary" @click="updateStatus(scope.row)" style="margin-left: 8px">更新</el-button>

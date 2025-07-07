@@ -110,14 +110,14 @@
         </div>
       </el-card>
 
-      <el-card class="stat-card not-yet-time">
+      <el-card class="stat-card not-signed-in">
         <div class="stat-content">
           <div class="stat-icon">
-            <el-icon><Timer /></el-icon>
+            <el-icon><User /></el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">{{ attendanceDetail.summary.not_yet_time_count }}</div>
-            <div class="stat-label">未到时间</div>
+            <div class="stat-value">{{ attendanceDetail.summary.not_signed_in_count }}</div>
+            <div class="stat-label">未签到</div>
           </div>
         </div>
       </el-card>
@@ -162,7 +162,6 @@
                   <el-option label="早退" value="early_leave" />
                   <el-option label="晚退" value="late_leave" />
                   <el-option label="缺勤" value="absent" />
-                  <el-option label="未到时间" value="not_yet_time" />
                 </el-select>
                 <el-button 
                   size="small" 
@@ -228,7 +227,6 @@
                   <el-option label="早退" value="early_leave" />
                   <el-option label="晚退" value="late_leave" />
                   <el-option label="缺勤" value="absent" />
-                  <el-option label="未到时间" value="not_yet_time" />
                 </el-select>
                 <el-button 
                   size="small" 
@@ -294,7 +292,6 @@
                   <el-option label="早退" value="early_leave" />
                   <el-option label="晚退" value="late_leave" />
                   <el-option label="缺勤" value="absent" />
-                  <el-option label="未到时间" value="not_yet_time" />
                 </el-select>
                 <el-button 
                   size="small" 
@@ -360,7 +357,6 @@
                   <el-option label="早退" value="early_leave" />
                   <el-option label="晚退" value="late_leave" />
                   <el-option label="缺勤" value="absent" />
-                  <el-option label="未到时间" value="not_yet_time" />
                 </el-select>
                 <el-button 
                   size="small" 
@@ -426,7 +422,6 @@
                   <el-option label="早退" value="early_leave" />
                   <el-option label="晚退" value="late_leave" />
                   <el-option label="缺勤" value="absent" />
-                  <el-option label="未到时间" value="not_yet_time" />
                 </el-select>
                 <el-button 
                   size="small" 
@@ -508,7 +503,6 @@
                     <el-option label="早退" value="early_leave" />
                     <el-option label="晚退" value="late_leave" />
                     <el-option label="缺勤" value="absent" />
-                    <el-option label="未到时间" value="not_yet_time" />
                   </template>
                 </el-select>
                 <el-button 
@@ -536,20 +530,20 @@
         />
       </el-card>
 
-      <!-- 未到签到时间记录 -->
+      <!-- 未签到记录 -->
       <el-card class="attendance-section">
         <template #header>
           <div class="section-header">
             <span class="section-title">
-              <el-icon><Timer /></el-icon>
-              未到签到时间 ({{ attendanceDetail?.not_yet_time_records?.length || 0 }})
+              <el-icon><User /></el-icon>
+              未签到记录 ({{ attendanceDetail?.not_signed_in_records?.length || 0 }})
             </span>
-            <el-tag type="info" size="small">未到时间</el-tag>
+            <el-tag type="warning" size="small">未签到</el-tag>
           </div>
         </template>
 
         <el-table 
-          :data="attendanceDetail?.not_yet_time_records || []" 
+          :data="attendanceDetail?.not_signed_in_records || []" 
           border 
           stripe 
           v-loading="loading"
@@ -557,8 +551,16 @@
         >
           <el-table-column prop="name" label="员工姓名" width="120" />
           <el-table-column prop="phone" label="手机号" width="150" />
-          <el-table-column prop="time" label="签到时间" width="180" align="center" />
-          <el-table-column prop="location" label="位置" min-width="150" show-overflow-tooltip />
+          <el-table-column prop="time" label="签到时间" width="180" align="center">
+            <template #default="scope">
+              <span style="color: #909399;">未签到</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="location" label="位置" min-width="150" show-overflow-tooltip>
+            <template #default="scope">
+              <span style="color: #909399;">无位置信息</span>
+            </template>
+          </el-table-column>
           <el-table-column label="状态" width="150" align="center">
             <template #default="scope">
               <div class="status-selector">
@@ -568,12 +570,10 @@
                   style="width: 120px"
                   placeholder="选择状态"
                 >
-                  <el-option label="正常" value="normal" />
+                  <el-option label="正常签到" value="normal" />
                   <el-option label="迟到" value="late" />
-                  <el-option label="早退" value="early_leave" />
-                  <el-option label="晚退" value="late_leave" />
                   <el-option label="缺勤" value="absent" />
-                  <el-option label="未到时间" value="not_yet_time" />
+                  <el-option label="未签到" value="not_signed_in" />
                 </el-select>
                 <el-button 
                   size="small" 
@@ -586,18 +586,16 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="100" align="center">
+          <el-table-column label="备注" min-width="200">
             <template #default="scope">
-              <el-button size="small" type="primary" @click="viewDetail(scope.row)">
-                详情
-              </el-button>
+              <span style="color: #909399;">{{ scope.row.remark || '今日未签到' }}</span>
             </template>
           </el-table-column>
         </el-table>
 
         <el-empty 
-          v-if="!loading && (!attendanceDetail?.not_yet_time_records || attendanceDetail.not_yet_time_records.length === 0)" 
-          description="暂无未到签到时间记录" 
+          v-if="!loading && (!attendanceDetail?.not_signed_in_records || attendanceDetail.not_signed_in_records.length === 0)" 
+          description="暂无未签到记录" 
           :image-size="80"
         />
       </el-card>
@@ -836,8 +834,8 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
 }
 
-.not-yet-time .stat-icon {
-  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+.not-signed-in .stat-icon {
+  background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
 }
 
 .stat-info {

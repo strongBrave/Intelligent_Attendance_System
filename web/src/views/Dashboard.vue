@@ -109,14 +109,14 @@
         </div>
       </el-card>
 
-      <el-card class="summary-card not-yet-time">
+      <el-card class="summary-card not-signed-in">
         <div class="card-content">
           <div class="card-icon">
-            <el-icon><Timer /></el-icon>
+            <el-icon><User /></el-icon>
           </div>
           <div class="card-info">
-            <div class="card-value">{{ summary.total_not_yet_time }}</div>
-            <div class="card-label">未到时间</div>
+            <div class="card-value">{{ summary.total_not_signed_in }}</div>
+            <div class="card-label">未签到</div>
           </div>
         </div>
       </el-card>
@@ -218,11 +218,11 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="not_yet_time_count" label="未到时间" width="120" align="center">
+        <el-table-column prop="not_signed_in_count" label="未签到" width="120" align="center">
           <template #default="scope">
-            <div class="stat-cell not-yet-time">
-              <el-icon><Timer /></el-icon>
-              <span>{{ scope.row.not_yet_time_count }}</span>
+            <div class="stat-cell not-signed-in">
+              <el-icon><User /></el-icon>
+              <span>{{ scope.row.not_signed_in_count }}</span>
             </div>
           </template>
         </el-table-column>
@@ -407,8 +407,8 @@ onMounted(() => {
   background: linear-gradient(135deg, #845ec2 0%, #b39ddb 100%);
 }
 
-.not-yet-time .card-icon {
-  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+.not-signed-in .card-icon {
+  background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
 }
 
 .card-info {
@@ -499,8 +499,8 @@ onMounted(() => {
   color: #845EC2;
 }
 
-.stat-cell.not-yet-time {
-  color: #67C23A;
+.stat-cell.not-signed-in {
+  color: #E6A23C;
 }
 
 .attendance-rate-cell {
