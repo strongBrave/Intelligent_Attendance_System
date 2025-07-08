@@ -25,7 +25,7 @@ class FaceService:
         self.cloud_api_timeout = int(os.getenv('CLOUD_API_TIMEOUT', '30'))  # 30秒超时
         
         # 设置相似度阈值
-        self.similarity_threshold = 0.6
+        self.similarity_threshold = 0.9
         
         # 创建上传目录
         self.upload_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'faces')

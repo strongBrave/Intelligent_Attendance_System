@@ -475,7 +475,7 @@ def verify_face():
                 # 删除临时文件
                 os.remove(filepath)
                 
-                if max_similarity >= 0.6:
+                if max_similarity >= 0.9:
                     return jsonify({
                         'success': True,
                         'similarity': max_similarity,
