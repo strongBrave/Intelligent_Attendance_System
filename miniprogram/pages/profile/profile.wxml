@@ -125,12 +125,7 @@
       <text class="action-text">考勤日历</text>
     </view>
     
-    <view class="action-item" bindtap="goToStats">
-      <view class="action-icon">
-        <text class="icon-text">📈</text>
-      </view>
-      <text class="action-text">考勤统计</text>
-    </view>
+
   </view>
 
   <!-- 人脸更新申请状态 -->

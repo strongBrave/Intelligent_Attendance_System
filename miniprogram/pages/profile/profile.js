@@ -184,12 +184,7 @@ Page({
     })
   },
 
-  // 跳转到统计页面
-  goToStats() {
-    wx.switchTab({
-      url: '/pages/stats/stats'
-    })
-  },
+
 
   // 退出登录
   logout() {
