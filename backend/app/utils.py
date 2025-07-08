@@ -45,7 +45,9 @@ def is_within_range(lat1, lon1, location_str, distance_threshold):
         if not location_str or ',' not in location_str:
             return True  # 如果没有设置位置，默认允许打卡
         
-        lat2_str, lon2_str = location_str.split(',')
+        lat2_str, lon2_str = location_str.split(',')[0], location_str.split(',')[1]
+        lon2_str = lon2_str.split('(')[0].strip()
+        
         lat2 = float(lat2_str.strip())
         lon2 = float(lon2_str.strip())
         
