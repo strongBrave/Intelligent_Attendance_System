@@ -1609,7 +1609,8 @@ def get_attendance_map_data():
                         lng = float(lng_str.strip())
                         
                         # 获取地址显示
-                        address = record.location.split(' (')[1].rstrip(')') if '(' in record.location else '未知地址'
+                        address = format_location_display(record.location)
+                        address = address.split(' (')[1].rstrip(')') if '(' in record.location else '未知地址'
                         
                         # 构建地图点数据
                         point_data = {
