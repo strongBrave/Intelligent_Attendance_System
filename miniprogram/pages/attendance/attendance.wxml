@@ -15,11 +15,11 @@
   <view class="distance-status" wx:if="{{departmentLocation}}">
     <view class="status-indicator {{inRange ? 'in-range' : 'out-range'}}">
       <view class="status-icon">
-        <text class="iconfont {{inRange ? 'icon-success' : 'icon-error'}}"></text>
+        <text>{{inRange ? '✅' : '❌'}}</text>
       </view>
       <view class="status-text">
         <text class="status-message">{{distanceInfo}}</text>
-        <text class="threshold-info">距离阈值: {{distanceThreshold}}米</text>
+        <text class="threshold-info">打卡范围: {{distanceThreshold}}米 | {{inRange ? '在范围内' : '超出范围'}}</text>
       </view>
     </view>
   </view>
@@ -68,6 +68,18 @@
         show-location="true"
         style="width: 100%; height: 300px;"
       ></map>
+      
+      <!-- 地图图例 -->
+      <view class="map-legend">
+        <view class="legend-item">
+          <view class="legend-arrow user"></view>
+          <text>我的位置</text>
+        </view>
+        <view class="legend-item" wx:if="{{departmentLocation}}">
+          <view class="legend-arrow work"></view>
+          <text>打卡位置</text>
+        </view>
+      </view>
     </view>
     <view class="map-controls">
       <button class="control-btn" bindtap="refreshLocation">
@@ -80,7 +92,7 @@
   <!-- 地图切换按钮 -->
   <view class="map-toggle">
     <button class="toggle-btn" bindtap="toggleMap">
-      <text class="iconfont icon-map"></text>
+      <text>{{showMap ? '🗺️' : '📍'}}</text>
       {{showMap ? '隐藏地图' : '显示地图'}}
     </button>
   </view>
