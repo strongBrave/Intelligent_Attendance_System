@@ -586,6 +586,7 @@ const renderSignInMap = () => {
   })
   
   // 添加标记点
+  const markers = []
   signInMapData.value.forEach(point => {
     const marker = new AMap.Marker({
       position: [point.lng, point.lat],
@@ -611,12 +612,19 @@ const renderSignInMap = () => {
     })
     
     signInMapInstance.add(marker)
+    markers.push(marker)
   })
   
-  // 自动调整视野
-  if (signInMapData.value.length > 0) {
-    const bounds = signInMapData.value.map(point => [point.lng, point.lat])
-    signInMapInstance.setFitView(bounds)
+  // 自动调整视野 - 修复：使用markers数组或者让地图自动适应
+  if (markers.length > 0) {
+    if (markers.length === 1) {
+      // 单个点时，设置中心点和缩放级别
+      signInMapInstance.setCenter(markers[0].getPosition())
+      signInMapInstance.setZoom(15)
+    } else {
+      // 多个点时，让地图自动适应所有标记
+      signInMapInstance.setFitView(markers)
+    }
   }
 }
 
@@ -648,37 +656,54 @@ const renderSignOutMap = () => {
   })
   
   // 添加标记点
-  signOutMapData.value.forEach(point => {
-    const marker = new AMap.Marker({
-      position: [point.lng, point.lat],
-      title: `${point.user_name} - ${point.status}`,
-      icon: getMarkerIcon(point.status, 'sign_out')
-    })
+  const markers = []
+  signOutMapData.value.forEach((point, index) => {
+    if (!point.lat || !point.lng) {
+      return
+    }
     
-    // 添加信息窗口
-    const infoWindow = new AMap.InfoWindow({
-      content: `
-        <div style="padding: 10px;">
-          <h4>${point.user_name}</h4>
-          <p><strong>状态:</strong> ${getStatusText(point.status)}</p>
-          <p><strong>时间:</strong> ${point.time}</p>
-          <p><strong>地址:</strong> ${point.address}</p>
-          ${point.remark ? `<p><strong>备注:</strong> ${point.remark}</p>` : ''}
-        </div>
-      `
-    })
-    
-    marker.on('click', () => {
-      infoWindow.open(signOutMapInstance, marker.getPosition())
-    })
-    
-    signOutMapInstance.add(marker)
+    try {
+      const marker = new AMap.Marker({
+        position: [point.lng, point.lat],
+        title: `${point.user_name} - ${point.status}`,
+        icon: getMarkerIcon(point.status, 'sign_out')
+      })
+      
+      // 添加信息窗口
+      const infoWindow = new AMap.InfoWindow({
+        content: `
+          <div style="padding: 10px;">
+            <h4>${point.user_name}</h4>
+            <p><strong>状态:</strong> ${getStatusText(point.status)}</p>
+            <p><strong>时间:</strong> ${point.time}</p>
+            <p><strong>地址:</strong> ${point.address}</p>
+            ${point.remark ? `<p><strong>备注:</strong> ${point.remark}</p>` : ''}
+          </div>
+        `
+      })
+      
+      marker.on('click', () => {
+        infoWindow.open(signOutMapInstance, marker.getPosition())
+      })
+      
+      signOutMapInstance.add(marker)
+      markers.push(marker)
+      
+    } catch (error) {
+      console.error('签退标记添加失败:', error)
+    }
   })
   
   // 自动调整视野
-  if (signOutMapData.value.length > 0) {
-    const bounds = signOutMapData.value.map(point => [point.lng, point.lat])
-    signOutMapInstance.setFitView(bounds)
+  if (markers.length > 0) {
+    if (markers.length === 1) {
+      // 单个点时，设置中心点和缩放级别
+      signOutMapInstance.setCenter(markers[0].getPosition())
+      signOutMapInstance.setZoom(15)
+    } else {
+      // 多个点时，让地图自动适应所有标记
+      signOutMapInstance.setFitView(markers)
+    }
   }
 }
 
