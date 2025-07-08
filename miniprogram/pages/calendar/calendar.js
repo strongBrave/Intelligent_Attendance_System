@@ -14,10 +14,12 @@ Page({
     
     // 统计信息
     stats: {
-      normal: 0,
+      normal_sign_in: 0,
+      normal_sign_out: 0,
       late: 0,
       absent: 0,
-      early_leave: 0
+      early_leave: 0,
+      late_leave: 0
     },
     
     // 选中日期
@@ -166,7 +168,7 @@ Page({
     const month = this.data.currentMonth
     
     wx.request({
-      url: `${app.globalData.baseUrl}/api/user/attendance/month`,
+      url: `${app.globalData.baseUrl}/api/user/month`,
       method: 'GET',
       header: {
         'Authorization': `Bearer ${token}`
@@ -176,41 +178,7 @@ Page({
         month: month
       },
       success: (res) => {
-        if (res.data.success) {
-          const data = res.data.data
-          const attendanceData = {}
-          const stats = {
-            normal: 0,
-            late: 0,
-            absent: 0,
-            early_leave: 0
-          }
-          
-          // 处理考勤数据
-          data.forEach(item => {
-            const date = item.date
-            attendanceData[date] = {
-              sign_in: item.sign_in ? item.sign_in.time : null,
-              sign_out: item.sign_out ? item.sign_out.time : null,
-              status: item.status,
-              statusText: this.getStatusText(item.status),
-              location: item.location
-            }
-            
-            // 统计
-            if (stats.hasOwnProperty(item.status)) {
-              stats[item.status]++
-            }
-          })
-          
-          this.setData({
-            attendanceData,
-            stats
-          })
-          
-          // 重新生成日历以显示考勤状态
-          this.generateCalendar()
-        }
+        this.processAttendanceData(res.data)
       },
       fail: (err) => {
         console.error('获取考勤数据失败:', err)
@@ -227,12 +195,17 @@ Page({
     const date = e.currentTarget.dataset.date
     const attendance = this.data.attendanceData[date]
     
+    // 如果没有考勤数据，创建默认结构
+    const defaultAttendance = {
+      sign_in: null,
+      sign_out: null,
+      status: 'absent',
+      statusText: this.getStatusText('absent')
+    }
+    
     this.setData({
       selectedDate: date,
-      selectedAttendance: attendance || {
-        status: 'absent',
-        statusText: '缺勤'
-      }
+      selectedAttendance: attendance || defaultAttendance
     })
   },
 
@@ -242,9 +215,38 @@ Page({
       'normal': '正常',
       'late': '迟到',
       'absent': '缺勤',
-      'early_leave': '早退'
+      'early_leave': '早退',
+      'late_leave': '晚退'
     }
-    return statusMap[status] || status
+    const result = statusMap[status] || status || '未知'
+    return result
+  },
+
+  // 检查数据完整性
+  validateAttendanceData(data) {
+    if (!Array.isArray(data)) {
+      console.error('[日历] 考勤数据不是数组格式:', data)
+      return false
+    }
+    
+    data.forEach((item, index) => {
+      if (!item.date) {
+        console.warn(`[日历] 第${index}条记录缺少日期字段:`, item)
+      }
+      if (!item.status) {
+        console.warn(`[日历] 第${index}条记录缺少状态字段:`, item)
+      }
+      
+      // 验证签到签退数据结构
+      if (item.sign_in && (!item.sign_in.time || !item.sign_in.status)) {
+        console.warn(`[日历] 第${index}条记录签到数据结构不完整:`, item.sign_in)
+      }
+      if (item.sign_out && (!item.sign_out.time || !item.sign_out.status)) {
+        console.warn(`[日历] 第${index}条记录签退数据结构不完整:`, item.sign_out)
+      }
+    })
+    
+    return true
   },
 
   // 跳转到打卡页面
@@ -269,5 +271,105 @@ Page({
         icon: 'success'
       })
     }, 1000)
+  },
+
+
+
+  // 提取数据处理逻辑为独立方法
+  processAttendanceData(response) {
+    if (response.success) {
+      const data = response.data
+      
+      // 验证数据完整性
+      if (!this.validateAttendanceData(data)) {
+        wx.showToast({
+          title: '考勤数据格式错误',
+          icon: 'none'
+        })
+        return
+      }
+      
+      const attendanceData = {}
+      const stats = {
+        normal_sign_in: 0,
+        normal_sign_out: 0,
+        late: 0,
+        absent: 0,
+        early_leave: 0,
+        late_leave: 0
+      }
+      
+      // 处理考勤数据
+      data.forEach(item => {
+        const date = item.date
+        
+        // 处理签到数据
+        let processedSignIn = null
+        if (item.sign_in) {
+          processedSignIn = {
+            time: item.sign_in.time,
+            status: item.sign_in.status,
+            statusText: this.getStatusText(item.sign_in.status),
+            location: item.sign_in.location
+          }
+        }
+        
+        // 处理签退数据
+        let processedSignOut = null
+        if (item.sign_out) {
+          processedSignOut = {
+            time: item.sign_out.time,
+            status: item.sign_out.status,
+            statusText: this.getStatusText(item.sign_out.status),
+            location: item.sign_out.location
+          }
+        }
+        
+        attendanceData[date] = {
+          sign_in: processedSignIn,
+          sign_out: processedSignOut,
+          status: item.status,
+          statusText: this.getStatusText(item.status),
+          location: item.location
+        }
+        
+        // 分别统计签到和签退状态
+        if (processedSignIn) {
+          const signInStatus = processedSignIn.status
+          if (signInStatus === 'normal') {
+            stats.normal_sign_in++
+          } else if (signInStatus === 'late') {
+            stats.late++
+          } else if (stats.hasOwnProperty(signInStatus)) {
+            stats[signInStatus]++
+          }
+        } else {
+          // 没有签到记录算作缺勤
+          stats.absent++
+        }
+        
+        if (processedSignOut) {
+          const signOutStatus = processedSignOut.status
+          if (signOutStatus === 'normal') {
+            stats.normal_sign_out++
+          } else if (stats.hasOwnProperty(signOutStatus)) {
+            stats[signOutStatus]++
+          }
+        }
+      })
+      
+      this.setData({
+        attendanceData,
+        stats
+      })
+      
+      // 重新生成日历以显示考勤状态
+      this.generateCalendar()
+    } else {
+      wx.showToast({
+        title: response.message || '获取数据失败',
+        icon: 'none'
+      })
+    }
   }
 }) 

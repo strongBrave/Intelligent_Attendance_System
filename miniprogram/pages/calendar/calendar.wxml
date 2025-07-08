@@ -17,12 +17,21 @@
   <!-- 统计卡片 -->
   <view class="stats-cards">
     <view class="stat-card">
-      <view class="stat-icon normal">
-        <text class="icon">✓</text>
+      <view class="stat-icon normal-in">
+        <text class="icon">📥</text>
       </view>
       <view class="stat-content">
-        <text class="stat-number">{{stats.normal}}</text>
-        <text class="stat-label">正常</text>
+        <text class="stat-number">{{stats.normal_sign_in}}</text>
+        <text class="stat-label">正常签到</text>
+      </view>
+    </view>
+    <view class="stat-card">
+      <view class="stat-icon normal-out">
+        <text class="icon">📤</text>
+      </view>
+      <view class="stat-content">
+        <text class="stat-number">{{stats.normal_sign_out}}</text>
+        <text class="stat-label">正常签退</text>
       </view>
     </view>
     <view class="stat-card">
@@ -52,6 +61,15 @@
         <text class="stat-label">早退</text>
       </view>
     </view>
+    <view class="stat-card" wx:if="{{stats.late_leave > 0}}">
+      <view class="stat-icon late-leave">
+        <text class="icon">🌙</text>
+      </view>
+      <view class="stat-content">
+        <text class="stat-number">{{stats.late_leave}}</text>
+        <text class="stat-label">晚退</text>
+      </view>
+    </view>
   </view>
 
   <!-- 星期标题 -->
@@ -74,8 +92,8 @@
       <view class="attendance-status" wx:if="{{item.attendance}}">
         <view class="status-dot {{item.attendance.status}}"></view>
         <view class="attendance-times" wx:if="{{item.attendance.sign_in || item.attendance.sign_out}}">
-          <text class="time-text" wx:if="{{item.attendance.sign_in}}">{{item.attendance.sign_in}}</text>
-          <text class="time-text" wx:if="{{item.attendance.sign_out}}">{{item.attendance.sign_out}}</text>
+          <text class="time-text" wx:if="{{item.attendance.sign_in}}">{{item.attendance.sign_in.time}}</text>
+          <text class="time-text" wx:if="{{item.attendance.sign_out}}">{{item.attendance.sign_out.time}}</text>
         </view>
       </view>
     </view>
@@ -86,37 +104,79 @@
     <view class="detail-header">
       <text class="detail-title">{{selectedDate}} 考勤详情</text>
     </view>
+    
     <view class="detail-content">
-      <view class="detail-item" wx:if="{{selectedAttendance.sign_in}}">
-        <view class="detail-label">
-          <text class="label-text">签到时间</text>
+      <!-- 签到信息 -->
+      <view class="attendance-section">
+        <view class="section-header">
+          <text class="section-icon">📥</text>
+          <text class="section-title">签到信息</text>
         </view>
-        <view class="detail-value">
-          <text class="value-text">{{selectedAttendance.sign_in}}</text>
+        <view class="section-content">
+          <view class="detail-item">
+            <view class="detail-label">
+              <text class="label-text">签到时间</text>
+            </view>
+            <view class="detail-value">
+              <text class="value-text" wx:if="{{selectedAttendance.sign_in}}">{{selectedAttendance.sign_in.time}}</text>
+              <text class="value-text no-data" wx:else>未签到</text>
+            </view>
+          </view>
+          <view class="detail-item">
+            <view class="detail-label">
+              <text class="label-text">签到状态</text>
+            </view>
+            <view class="detail-value">
+              <text class="value-text {{selectedAttendance.sign_in.status}}" wx:if="{{selectedAttendance.sign_in}}">{{selectedAttendance.sign_in.statusText}}</text>
+              <text class="value-text no-data" wx:else>无状态</text>
+            </view>
+          </view>
+          <view class="detail-item">
+            <view class="detail-label">
+              <text class="label-text">签到位置</text>
+            </view>
+            <view class="detail-value">
+              <text class="value-text location" wx:if="{{selectedAttendance.sign_in && selectedAttendance.sign_in.location}}">{{selectedAttendance.sign_in.location}}</text>
+              <text class="value-text no-data" wx:else>无位置信息</text>
+            </view>
+          </view>
         </view>
       </view>
-      <view class="detail-item" wx:if="{{selectedAttendance.sign_out}}">
-        <view class="detail-label">
-          <text class="label-text">签退时间</text>
+
+      <!-- 签退信息 -->
+      <view class="attendance-section">
+        <view class="section-header">
+          <text class="section-icon">📤</text>
+          <text class="section-title">签退信息</text>
         </view>
-        <view class="detail-value">
-          <text class="value-text">{{selectedAttendance.sign_out}}</text>
-        </view>
-      </view>
-      <view class="detail-item">
-        <view class="detail-label">
-          <text class="label-text">考勤状态</text>
-        </view>
-        <view class="detail-value">
-          <text class="value-text {{selectedAttendance.status}}">{{selectedAttendance.statusText}}</text>
-        </view>
-      </view>
-      <view class="detail-item" wx:if="{{selectedAttendance.location}}">
-        <view class="detail-label">
-          <text class="label-text">打卡位置</text>
-        </view>
-        <view class="detail-value">
-          <text class="value-text">{{selectedAttendance.location}}</text>
+        <view class="section-content">
+          <view class="detail-item">
+            <view class="detail-label">
+              <text class="label-text">签退时间</text>
+            </view>
+            <view class="detail-value">
+              <text class="value-text" wx:if="{{selectedAttendance.sign_out}}">{{selectedAttendance.sign_out.time}}</text>
+              <text class="value-text no-data" wx:else>未签退</text>
+            </view>
+          </view>
+          <view class="detail-item">
+            <view class="detail-label">
+              <text class="label-text">签退状态</text>
+            </view>
+            <view class="detail-value">
+              <text class="value-text {{selectedAttendance.sign_out.status}}" wx:if="{{selectedAttendance.sign_out}}">{{selectedAttendance.sign_out.statusText}}</text>
+              <text class="value-text no-data" wx:else>无状态</text>
+            </view>
+          </view>
+          <view class="detail-item">
+            <view class="detail-label">
+              <text class="label-text">签退位置</text>
+            </view>
+            <view class="detail-value">
+              <text class="value-text location" wx:if="{{selectedAttendance.sign_out && selectedAttendance.sign_out.location}}">{{selectedAttendance.sign_out.location}}</text>
+              <text class="value-text no-data" wx:else>无位置信息</text>
+            </view>
+          </view>
         </view>
       </view>
     </view>
