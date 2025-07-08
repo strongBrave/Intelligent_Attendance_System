@@ -601,15 +601,24 @@ Page({
     const markers = []
     const circles = []
 
-    // 添加当前位置标记
+    // 添加当前位置标记 - 使用蓝色箭头
     markers.push({
       id: 1,
       latitude: this.data.latitude,
       longitude: this.data.longitude,
-      title: '当前位置',
-      iconPath: '/images/location.png',
-      width: 30,
-      height: 30
+      title: '我的位置',
+      iconPath: '/images/user-location-arrow.svg',
+      width: 35,
+      height: 35,
+      callout: {
+        content: '当前位置',
+        color: '#1890ff',
+        fontSize: 12,
+        borderRadius: 6,
+        bgColor: '#ffffff',
+        padding: 8,
+        display: 'ALWAYS'
+      }
     })
 
     // 如果部门设置了位置，添加部门位置标记和范围圈
@@ -618,20 +627,29 @@ Page({
         id: 2,
         latitude: this.data.departmentLocation.latitude,
         longitude: this.data.departmentLocation.longitude,
-        title: '打卡位置',
-        iconPath: '/images/target.png',
-        width: 30,
-        height: 30
+        title: '打卡地点',
+        iconPath: '/images/work-location-arrow.svg',
+        width: 35,
+        height: 35,
+        callout: {
+          content: '打卡位置',
+          color: '#ff4d4f',
+          fontSize: 12,
+          borderRadius: 6,
+          bgColor: '#ffffff',
+          padding: 8,
+          display: 'ALWAYS'
+        }
       })
 
-      // 添加范围圈
+      // 添加范围圈 - 优化颜色显示
       circles.push({
         latitude: this.data.departmentLocation.latitude,
         longitude: this.data.departmentLocation.longitude,
-        color: this.data.inRange ? '#00ff00' : '#ff0000',
-        fillColor: this.data.inRange ? '#00ff0080' : '#ff000080',
+        color: this.data.inRange ? '#52c41a' : '#ff7875',
+        fillColor: this.data.inRange ? '#52c41a30' : '#ff787530',
         radius: this.data.distanceThreshold,
-        strokeWidth: 2
+        strokeWidth: 3
       })
     }
 
@@ -1198,7 +1216,8 @@ Page({
       'late': '迟到',
       'absent': '缺勤',
       'overtime': '加班',
-      'early_leave': '早退'
+      'early_leave': '早退',
+      'late_leave': '晚退'
     }
     return statusMap[status] || status
   },
