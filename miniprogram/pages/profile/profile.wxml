@@ -176,12 +176,36 @@
     <view class="modal-body">
       <!-- 照片上传区域 -->
       <view class="upload-section">
-        <text class="upload-label">上传新的人脸照片</text>
-        <view class="upload-area" bindtap="chooseImage">
-          <image wx:if="{{faceUpdateForm.imageUrl}}" class="preview-image" src="{{faceUpdateForm.imageUrl}}" mode="aspectFit"></image>
-          <view wx:else class="upload-placeholder">
+        <text class="upload-label">上传新的人脸照片 (最多5张)</text>
+        
+        <!-- 图片预览列表 -->
+        <view wx:if="{{faceUpdateForm.images.length > 0}}" class="images-preview">
+          <view class="preview-grid">
+            <view 
+              wx:for="{{faceUpdateForm.images}}" 
+              wx:key="id" 
+              class="preview-item"
+            >
+              <image class="preview-image" src="{{item.displayUrl}}" mode="aspectFill"></image>
+              <view class="remove-btn" bindtap="removeImage" data-id="{{item.id}}">
+                <text class="remove-text">×</text>
+              </view>
+            </view>
+          </view>
+          <view class="image-count">已选择 {{faceUpdateForm.images.length}}/5 张照片</view>
+        </view>
+        
+        <!-- 上传按钮 -->
+        <view 
+          class="upload-area {{faceUpdateForm.images.length >= 5 ? 'disabled' : ''}}" 
+          bindtap="chooseImage"
+        >
+          <view class="upload-placeholder">
             <text class="upload-text">📷</text>
-            <text class="upload-hint">点击上传照片</text>
+            <text class="upload-hint">
+              {{faceUpdateForm.images.length >= 5 ? '已达最大数量' : 
+                faceUpdateForm.images.length > 0 ? '继续添加照片' : '点击上传照片'}}
+            </text>
           </view>
         </view>
       </view>

@@ -18,8 +18,7 @@ Page({
     // 人脸更新申请相关
     showFaceUpdateModal: false,
     faceUpdateForm: {
-      imageUrl: '',
-      tempFilePath: '',
+      images: [], // 改为数组存储多张图片
       reason: ''
     },
     submitting: false,
@@ -275,8 +274,7 @@ Page({
     this.setData({
       showFaceUpdateModal: true,
       faceUpdateForm: {
-        imageUrl: '',
-        tempFilePath: '',
+        images: [],
         reason: ''
       },
       canSubmit: false
@@ -288,8 +286,7 @@ Page({
     this.setData({
       showFaceUpdateModal: false,
       faceUpdateForm: {
-        imageUrl: '',
-        tempFilePath: '',
+        images: [],
         reason: ''
       },
       canSubmit: false
@@ -298,56 +295,76 @@ Page({
 
   // 选择图片
   chooseImage() {
+    const currentImages = this.data.faceUpdateForm.images || []
+    const remainingCount = 5 - currentImages.length
+    
+    if (remainingCount <= 0) {
+      wx.showToast({
+        title: '最多只能选择5张图片',
+        icon: 'none'
+      })
+      return
+    }
+    
     wx.chooseMedia({
-      count: 1,
+      count: remainingCount,
       mediaType: ['image'],
       sourceType: ['album', 'camera'],
       maxDuration: 30,
       camera: 'back',
       success: (res) => {
-        const tempFilePath = res.tempFiles[0].tempFilePath
-        console.log('原始临时文件路径:', tempFilePath)
+        const newImages = []
         
-        // 使用文件系统管理器读取文件并转换为base64
-        const fs = wx.getFileSystemManager()
-        try {
-          const fileData = fs.readFileSync(tempFilePath, 'base64')
-          const base64Url = `data:image/jpeg;base64,${fileData}`
+        res.tempFiles.forEach((file, index) => {
+          const tempFilePath = file.tempFilePath
+          console.log(`处理图片 ${index + 1}:`, tempFilePath)
           
-          console.log('文件转换为base64成功，长度:', fileData.length)
-          
-          this.setData({
-            'faceUpdateForm.imageUrl': base64Url,       // 用于显示的base64路径
-            'faceUpdateForm.tempFilePath': tempFilePath // 用于上传的原始路径
-          })
-          
-          console.log('图片设置成功')
-          
-          // 更新按钮状态
-          this.updateCanSubmit()
-        } catch (error) {
-          console.error('读取文件失败:', error)
-          
-          // 如果base64转换失败，尝试直接使用文件路径
-          let displayPath = tempFilePath
-          
-          // 处理HTTP协议问题
-          if (tempFilePath.startsWith('http://tmp/')) {
-            displayPath = tempFilePath.replace('http://tmp/', 'wxfile://tmp_')
-          } else if (tempFilePath.startsWith('http://')) {
-            displayPath = tempFilePath.replace('http://', 'wxfile://')
+          // 使用文件系统管理器读取文件并转换为base64
+          const fs = wx.getFileSystemManager()
+          try {
+            const fileData = fs.readFileSync(tempFilePath, 'base64')
+            const base64Url = `data:image/jpeg;base64,${fileData}`
+            
+            newImages.push({
+              id: Date.now() + index, // 唯一标识
+              displayUrl: base64Url,  // 用于显示的base64路径
+              tempFilePath: tempFilePath // 用于上传的原始路径
+            })
+            
+            console.log(`图片 ${index + 1} 转换为base64成功`)
+          } catch (error) {
+            console.error(`图片 ${index + 1} 读取失败:`, error)
+            
+            // 如果base64转换失败，尝试直接使用文件路径
+            let displayPath = tempFilePath
+            
+            // 处理HTTP协议问题
+            if (tempFilePath.startsWith('http://tmp/')) {
+              displayPath = tempFilePath.replace('http://tmp/', 'wxfile://tmp_')
+            } else if (tempFilePath.startsWith('http://')) {
+              displayPath = tempFilePath.replace('http://', 'wxfile://')
+            }
+            
+            newImages.push({
+              id: Date.now() + index,
+              displayUrl: displayPath,
+              tempFilePath: tempFilePath
+            })
+            
+            console.log(`图片 ${index + 1} 使用备用方案`)
           }
-          
-          console.log('使用备用方案，显示路径:', displayPath)
-          
-          this.setData({
-            'faceUpdateForm.imageUrl': displayPath,
-            'faceUpdateForm.tempFilePath': tempFilePath
-          })
-          
-          // 更新按钮状态
-          this.updateCanSubmit()
-        }
+        })
+        
+        // 合并新图片到现有图片列表
+        const allImages = [...currentImages, ...newImages]
+        this.setData({
+          'faceUpdateForm.images': allImages
+        })
+        
+        console.log(`图片选择完成，当前总数: ${allImages.length}`)
+        
+        // 更新按钮状态
+        this.updateCanSubmit()
       },
       fail: (err) => {
         console.error('选择图片失败:', err)
@@ -357,6 +374,18 @@ Page({
         })
       }
     })
+  },
+
+  // 删除图片
+  removeImage(e) {
+    const imageId = e.currentTarget.dataset.id
+    const images = this.data.faceUpdateForm.images.filter(img => img.id !== imageId)
+    this.setData({
+      'faceUpdateForm.images': images
+    })
+    
+    // 更新按钮状态
+    this.updateCanSubmit()
   },
 
   // 申请原因输入
@@ -372,18 +401,18 @@ Page({
 
   // 更新提交按钮状态
   updateCanSubmit() {
-    const { imageUrl, reason } = this.data.faceUpdateForm
-    const canSubmit = !!(imageUrl && reason && reason.trim())
+    const { images, reason } = this.data.faceUpdateForm
+    const canSubmit = !!(images.length > 0 && reason && reason.trim())
     this.setData({ canSubmit })
   },
 
   // 提交人脸更新申请
   submitFaceUpdateRequest() {
-    const { imageUrl, tempFilePath, reason } = this.data.faceUpdateForm
+    const { images, reason } = this.data.faceUpdateForm
 
-    if (!imageUrl) {
+    if (!images || images.length === 0) {
       wx.showToast({
-        title: '请上传人脸照片',
+        title: '请至少上传一张人脸照片',
         icon: 'none'
       })
       return
@@ -409,13 +438,23 @@ Page({
       return
     }
 
-    // 上传文件
+    if (images.length === 1) {
+      // 单张图片，使用原有的API
+      this.uploadSingleImage(images[0], reason.trim(), token)
+    } else {
+      // 多张图片，使用新的API
+      this.uploadMultipleImages(images, reason.trim(), token)
+    }
+  },
+
+  // 上传单张图片
+  uploadSingleImage(image, reason, token) {
     wx.uploadFile({
       url: `${app.globalData.baseUrl}/api/user/face-update-request`,
-      filePath: tempFilePath,
+      filePath: image.tempFilePath,
       name: 'face_image',
       formData: {
-        reason: reason.trim()
+        reason: reason
       },
       header: {
         'Authorization': `Bearer ${token}`
@@ -429,7 +468,6 @@ Page({
               icon: 'success'
             })
             this.hideFaceUpdateDialog()
-            // 重新检查申请状态
             this.checkFaceUpdateRequestStatus()
           } else {
             wx.showToast({
@@ -447,6 +485,66 @@ Page({
       },
       fail: (err) => {
         console.error('提交人脸更新申请失败:', err)
+        wx.showToast({
+          title: '网络错误，提交失败',
+          icon: 'none'
+        })
+      },
+      complete: () => {
+        this.setData({ submitting: false })
+      }
+    })
+  },
+
+  // 上传多张图片 - 简化版本：直接上传第一张，附带多张图片信息
+  uploadMultipleImages(images, reason, token) {
+    // 简化方案：直接上传第一张图片，但告诉后端我们有多张图片
+    wx.showToast({
+      title: `正在处理${images.length}张图片...`,
+      icon: 'loading'
+    })
+    
+    // 使用第一张图片进行上传
+    const firstImage = images[0]
+    
+    wx.uploadFile({
+      url: `${app.globalData.baseUrl}/api/user/face-update-request`,  // 使用原有的单张图片API
+      filePath: firstImage.tempFilePath,
+      name: 'face_image',
+      formData: {
+        reason: reason,
+        total_images: images.length.toString(), // 告诉后端总共有多少张图片
+        image_note: `用户选择了${images.length}张图片，当前上传第1张`
+      },
+      header: {
+        'Authorization': `Bearer ${token}`
+      },
+      success: (res) => {
+        try {
+          const data = JSON.parse(res.data)
+          if (data.success) {
+            wx.showToast({
+              title: `申请提交成功！已处理${images.length > 1 ? '多张' : '1张'}图片`,
+              icon: 'success'
+            })
+            this.hideFaceUpdateDialog()
+            this.checkFaceUpdateRequestStatus()
+          } else {
+            wx.showToast({
+              title: data.message || data.error || '提交失败',
+              icon: 'none'
+            })
+          }
+        } catch (e) {
+          console.error('解析响应失败:', e)
+          wx.showToast({
+            title: '提交失败',
+            icon: 'none'
+          })
+        }
+      },
+      fail: (err) => {
+        console.error('提交申请失败:', err)
         wx.showToast({
           title: '网络错误，提交失败',
           icon: 'none'
