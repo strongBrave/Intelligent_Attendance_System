@@ -876,7 +876,6 @@ def get_department_attendance_detail(department_id):
     absent_count = len(absent_records)
     not_signed_in_count = len(not_signed_in_records)
     not_signed_out_count = len(not_signed_out_records)
-    print(absent_records)
     
     return jsonify({
         'department': {
@@ -1609,8 +1608,8 @@ def get_attendance_map_data():
                         lng = float(lng_str.strip())
                         
                         # 获取地址显示
-                        address = format_location_display(record.location)
-                        address = address.split(' (')[1].rstrip(')') if '(' in record.location else '未知地址'
+                        formatted_location = format_location_display(record.location)
+                        address = formatted_location.split(' (')[1].rstrip(')') if '(' in formatted_location else '未知地址'
                         
                         # 构建地图点数据
                         point_data = {
