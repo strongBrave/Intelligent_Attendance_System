@@ -128,9 +128,6 @@ class FaceService:
             # 归一化特征向量
             features1_norm = features1 / np.linalg.norm(features1)
             features2_norm = features2 / np.linalg.norm(features2)
-
-            print(f"features1_norm: {features1_norm}")
-            print(f"features2_norm: {features2_norm}")
             
             # 计算余弦相似度
             similarity = np.dot(features1_norm, features2_norm)
