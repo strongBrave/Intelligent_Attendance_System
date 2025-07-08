@@ -57,6 +57,14 @@
           </div>
         </el-menu-item>
         
+        <el-menu-item index="/face-update-requests" class="menu-item">
+          <div class="menu-item-content">
+            <svg class="menu-icon" viewBox="0 0 24 24" width="20" height="20">
+              <path fill="currentColor" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14M22,24H14V22H22V24M13.5,22L10.5,19L9,20.5L13.5,25L23,15.5L21.5,14L13.5,22Z"/>
+            </svg>
+            <span class="menu-text">人脸审核</span>
+          </div>
+        </el-menu-item>
 
         <el-menu-item index="/stats" class="menu-item">
           <div class="menu-item-content">

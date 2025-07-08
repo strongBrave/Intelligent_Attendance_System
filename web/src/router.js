@@ -7,6 +7,7 @@ import EmployeeEdit from './views/EmployeeEdit.vue'
 import AttendanceList from './views/AttendanceList.vue'
 import Stats from './views/Stats.vue'
 import Login from './views/Login.vue'
+import FaceUpdateRequests from './views/FaceUpdateRequests.vue'
 
 const routes = [
   {
@@ -64,6 +65,12 @@ const routes = [
     path: '/stats',
     name: 'Stats',
     component: Stats,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/face-update-requests',
+    name: 'FaceUpdateRequests',
+    component: FaceUpdateRequests,
     meta: { requiresAuth: true }
   }
 ]
