@@ -79,4 +79,53 @@ class Attendance(db.Model):
                 return np.array(json.loads(self.check_face_features))
             except:
                 return None
+        return None
+
+class FaceUpdateRequest(db.Model):
+    """人脸照片修改审核申请表"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    old_face_url = db.Column(db.String(256))  # 原照片路径
+    new_face_url = db.Column(db.String(256))  # 新照片路径
+    old_face_features = db.Column(db.Text)    # 原特征向量（JSON格式）
+    new_face_features = db.Column(db.Text)    # 新特征向量（JSON格式）
+    status = db.Column(db.String(16), default='pending')  # pending/approved/rejected
+    reason = db.Column(db.String(512))        # 申请原因
+    admin_comment = db.Column(db.String(512)) # 管理员备注
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    admin_id = db.Column(db.Integer, db.ForeignKey('user.id'))  # 处理的管理员ID
+    
+    # 关联关系
+    user = db.relationship('User', foreign_keys=[user_id], backref='face_update_requests')
+    admin = db.relationship('User', foreign_keys=[admin_id])
+    
+    def set_old_features(self, features):
+        """设置原特征向量"""
+        if isinstance(features, np.ndarray):
+            features = features.tolist()
+        self.old_face_features = json.dumps(features)
+    
+    def get_old_features(self):
+        """获取原特征向量"""
+        if self.old_face_features:
+            try:
+                return np.array(json.loads(self.old_face_features))
+            except:
+                return None
+        return None
+    
+    def set_new_features(self, features):
+        """设置新特征向量"""
+        if isinstance(features, np.ndarray):
+            features = features.tolist()
+        self.new_face_features = json.dumps(features)
+    
+    def get_new_features(self):
+        """获取新特征向量"""
+        if self.new_face_features:
+            try:
+                return np.array(json.loads(self.new_face_features))
+            except:
+                return None
         return None 
