@@ -347,6 +347,41 @@ const fetchDashboardData = async () => {
   }
 }
 
+// 静默自动考勤检查（页面加载时执行）
+const runSilentAutoCheck = async () => {
+  try {
+    const response = await api.post('/admin/attendance/auto-check')
+    const data = response.data
+
+    if (data.success) {
+      const totalRecords = data.total_records_created || 0
+      
+      // 只有创建了记录才显示提示
+      if (totalRecords > 0) {
+        autoCheckResult.value = {
+          title: `自动考勤检查完成 - 共创建 ${totalRecords} 条记录`,
+          type: 'success',
+          description: `成功创建 ${data.absent_records_created || 0} 条缺勤记录，${data.late_leave_records_created || 0} 条晚退记录`,
+          details: data.details || [],
+          check_time: data.check_time
+        }
+        
+        ElMessage.success(`自动考勤检查完成，创建了 ${totalRecords} 条记录`)
+        
+        // 重新获取仪表盘数据
+        await fetchDashboardData()
+      }
+      // 如果没有创建记录，则静默执行，不显示任何提示
+    } else {
+      // 只有出错时才显示错误信息
+      console.warn('自动考勤检查警告:', data.error)
+    }
+  } catch (error) {
+    // 静默处理错误，只在控制台记录
+    console.error('自动考勤检查失败:', error)
+  }
+}
+
 // 刷新数据
 const refreshData = () => {
   fetchDashboardData()
@@ -427,8 +462,10 @@ const runAutoCheck = async () => {
   }
 }
 
-onMounted(() => {
-  fetchDashboardData()
+onMounted(async () => {
+  // 先执行自动考勤检查，再获取仪表盘数据
+  await runSilentAutoCheck()
+  await fetchDashboardData()
 })
 </script>
 
