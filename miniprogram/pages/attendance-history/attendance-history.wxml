@@ -55,12 +55,24 @@
         <text class="stats-label">总记录</text>
       </view>
       <view class="stats-item">
-        <text class="stats-number normal">{{stats.normal}}</text>
-        <text class="stats-label">正常</text>
+        <text class="stats-number normal">{{stats.normal_sign_in}}</text>
+        <text class="stats-label">📥 正常签到</text>
+      </view>
+      <view class="stats-item">
+        <text class="stats-number normal">{{stats.normal_sign_out}}</text>
+        <text class="stats-label">📤 正常签退</text>
       </view>
       <view class="stats-item">
         <text class="stats-number late">{{stats.late}}</text>
         <text class="stats-label">迟到</text>
+      </view>
+      <view class="stats-item">
+        <text class="stats-number early">{{stats.early_leave}}</text>
+        <text class="stats-label">早退</text>
+      </view>
+      <view class="stats-item">
+        <text class="stats-number late">{{stats.late_leave}}</text>
+        <text class="stats-label">晚退</text>
       </view>
       <view class="stats-item">
         <text class="stats-number absent">{{stats.absent}}</text>
@@ -79,16 +91,19 @@
       <view class="record-item" wx:for="{{records}}" wx:key="id">
         <view class="record-header">
           <text class="record-date">{{item.date}}</text>
-          <text class="record-status {{item.status}}">{{item.statusText}}</text>
+          <view class="record-type-status">
+            <text class="record-type">{{item.checkTypeText}}</text>
+            <text class="record-status {{item.status}}">{{item.statusText}}</text>
+          </view>
         </view>
         <view class="record-content">
           <view class="record-time">
-            <text class="time-label">签到:</text>
-            <text class="time-value">{{item.sign_in_time || '未签到'}}</text>
+            <text class="time-label">{{item.checkTypeText}}时间:</text>
+            <text class="time-value">{{item.time_display || '未记录'}}</text>
           </view>
-          <view class="record-time">
-            <text class="time-label">签退:</text>
-            <text class="time-value">{{item.sign_out_time || '未签退'}}</text>
+          <view class="record-location">
+            <text class="location-label">{{item.checkTypeText}}地点:</text>
+            <text class="location-value">{{item.location_display}}</text>
           </view>
         </view>
       </view>

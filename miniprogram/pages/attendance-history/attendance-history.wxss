@@ -163,7 +163,7 @@
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 20rpx;
 }
 
@@ -192,13 +192,15 @@
   color: #ff4d4f;
 }
 
-.stats-number.early_leave {
+.stats-number.early {
   color: #fa8c16;
 }
 
 .stats-label {
-  font-size: 24rpx;
+  font-size: 22rpx;
   color: #666;
+  text-align: center;
+  line-height: 1.2;
 }
 
 /* 考勤记录列表 */
@@ -245,6 +247,20 @@
   color: #333;
 }
 
+.record-type-status {
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+}
+
+.record-type {
+  padding: 6rpx 12rpx;
+  border-radius: 15rpx;
+  font-size: 22rpx;
+  background: #007AFF;
+  color: white;
+}
+
 .record-status {
   padding: 8rpx 16rpx;
   border-radius: 20rpx;
@@ -268,6 +284,10 @@
   background: #fa8c16;
 }
 
+.record-status.late_leave {
+  background: #722ed1;
+}
+
 .record-status.not_yet_time {
   background: #999;
 }
@@ -278,22 +298,23 @@
   gap: 15rpx;
 }
 
-.record-time {
+.record-time, .record-location {
   display: flex;
   align-items: center;
   gap: 20rpx;
 }
 
-.time-label {
+.time-label, .location-label {
   font-size: 26rpx;
   color: #666;
-  min-width: 80rpx;
+  min-width: 120rpx;
 }
 
-.time-value {
+.time-value, .location-value {
   font-size: 26rpx;
   color: #333;
   font-weight: bold;
+  flex: 1;
 }
 
 /* 空状态 */

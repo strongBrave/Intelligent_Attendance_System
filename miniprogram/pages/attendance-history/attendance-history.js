@@ -11,10 +11,12 @@ Page({
     records: [],
     stats: {
       total: 0,
-      normal: 0,
+      normal_sign_in: 0,
+      normal_sign_out: 0,
       late: 0,
       absent: 0,
-      early_leave: 0
+      early_leave: 0,
+      late_leave: 0
     },
     
     // 加载状态
@@ -155,10 +157,7 @@ Page({
           const records = res.data.records || []
           
           // 处理记录数据
-          const processedRecords = records.map(record => ({
-            ...record,
-            statusText: this.getStatusText(record.status)
-          }))
+          const processedRecords = this.processRecords(records)
           
           // 计算统计信息
           const stats = this.calculateStats(records)
@@ -196,10 +195,12 @@ Page({
       records: [],
       stats: {
         total: 0,
-        normal: 0,
+        normal_sign_in: 0,
+        normal_sign_out: 0,
         late: 0,
         absent: 0,
-        early_leave: 0
+        early_leave: 0,
+        late_leave: 0
       }
     })
   },
@@ -208,14 +209,22 @@ Page({
   calculateStats(records) {
     const stats = {
       total: records.length,
-      normal: 0,
+      normal_sign_in: 0,
+      normal_sign_out: 0,
       late: 0,
       absent: 0,
-      early_leave: 0
+      early_leave: 0,
+      late_leave: 0
     }
     
     records.forEach(record => {
-      if (stats.hasOwnProperty(record.status)) {
+      if (record.status === 'normal') {
+        if (record.check_type === 'sign_in') {
+          stats.normal_sign_in++
+        } else if (record.check_type === 'sign_out') {
+          stats.normal_sign_out++
+        }
+      } else if (stats.hasOwnProperty(record.status)) {
         stats[record.status]++
       }
     })
@@ -230,8 +239,29 @@ Page({
       'late': '迟到',
       'absent': '缺勤',
       'early_leave': '早退',
+      'late_leave': '晚退',
       'not_yet_time': '未到时间'
     }
     return statusMap[status] || status
+  },
+
+  // 获取操作类型文本
+  getCheckTypeText(checkType) {
+    const typeMap = {
+      'sign_in': '签到',
+      'sign_out': '签退'
+    }
+    return typeMap[checkType] || checkType
+  },
+
+  // 处理记录数据
+  processRecords(records) {
+    return records.map(record => ({
+      ...record,
+      statusText: this.getStatusText(record.status),
+      checkTypeText: this.getCheckTypeText(record.check_type),
+      time_display: record.time ? record.time.split(' ')[1] : '', // 只显示时间部分
+      location_display: record.location || '未知位置'
+    }))
   }
 }) 
