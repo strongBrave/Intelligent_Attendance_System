@@ -705,4 +705,136 @@ def get_face_update_request_status():
             'created_at': latest_request.created_at.strftime('%Y-%m-%d %H:%M:%S'),
             'updated_at': latest_request.updated_at.strftime('%Y-%m-%d %H:%M:%S') if latest_request.updated_at else None
         }
-    }) 
+    })
+
+@bp.route('/api/user/face-update-request-multiple', methods=['POST'])
+@jwt_required()
+def submit_face_update_request_multiple():
+    """用户提交多张人脸更新申请"""
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    
+    if not user:
+        return jsonify({'error': '用户不存在'}), 404
+    
+    # 检查是否有待处理的申请
+    existing_request = FaceUpdateRequest.query.filter_by(
+        user_id=current_user_id,
+        status='pending'
+    ).first()
+    
+    if existing_request:
+        return jsonify({'error': '您已有待处理的人脸更新申请，请等待审核结果'}), 400
+    
+    # 获取申请参数
+    face_images = request.files.getlist('face_images')
+    reason = request.form.get('reason', '').strip()
+    
+    if not face_images or len(face_images) == 0:
+        return jsonify({'error': '请上传人脸照片'}), 400
+    
+    if not reason:
+        return jsonify({'error': '请填写申请原因'}), 400
+    
+    try:
+        # 保存所有图片并提取特征
+        saved_files = []
+        features_list = []
+        
+        # 处理所有上传的图片
+        for i, face_image in enumerate(face_images):
+            if not face_image.filename:
+                continue
+            
+            # 保存新照片
+            filename = f"face_update_{current_user_id}_{uuid.uuid4().hex}_{i}.jpg"
+            upload_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'uploads', 'faces')
+            os.makedirs(upload_dir, exist_ok=True)
+            new_face_path = os.path.join(upload_dir, filename)
+            face_image.save(new_face_path)
+            saved_files.append(new_face_path)
+            
+            # 提取人脸特征
+            print(f"[人脸检测] 开始为用户 {current_user_id} 提取第{i+1}张图片的人脸特征，路径: {new_face_path}")
+            features, _ = face_service.extract_face_features(new_face_path)
+            
+            if features is not None:
+                features_list.append(features)
+                print(f"[人脸检测] 用户 {current_user_id} 第{i+1}张图片人脸特征提取成功")
+            else:
+                print(f"[人脸检测] 用户 {current_user_id} 第{i+1}张图片人脸特征提取失败")
+        
+        if len(features_list) == 0:
+            # 清理保存的文件
+            for filepath in saved_files:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+            return jsonify({'error': '未检测到任何有效的人脸，请确保照片中有清晰的人脸'}), 400
+        
+        # 计算平均特征向量
+        if len(features_list) > 1:
+            average_features = face_service.calculate_average_features(features_list)
+            if average_features is None:
+                # 清理保存的文件
+                for filepath in saved_files:
+                    if os.path.exists(filepath):
+                        os.remove(filepath)
+                return jsonify({'error': '无法计算平均特征向量'}), 400
+            new_features = average_features
+            print(f"[人脸检测] 用户 {current_user_id} 平均特征向量计算成功，使用了{len(features_list)}张图片")
+        else:
+            new_features = features_list[0]
+            print(f"[人脸检测] 用户 {current_user_id} 使用单张图片特征")
+        
+        # 获取原照片信息
+        old_face_url = None
+        old_features = None
+        if user.face_data:
+            old_face_url = user.face_data.face_url
+            old_features = user.face_data.get_features()
+            print(f"[人脸检测] 用户 {current_user_id} 已有原人脸数据，路径: {old_face_url}")
+        else:
+            print(f"[人脸检测] 用户 {current_user_id} 首次注册人脸")
+        
+        # 创建审核申请，使用第一张图片作为主图片
+        face_request = FaceUpdateRequest(
+            user_id=current_user_id,
+            old_face_url=old_face_url,
+            new_face_url=saved_files[0],  # 使用第一张图片
+            reason=reason,
+            status='pending'
+        )
+        
+        # 设置特征向量
+        if old_features is not None:
+            face_request.set_old_features(old_features)
+        face_request.set_new_features(new_features)
+        
+        db.session.add(face_request)
+        db.session.commit()
+        
+        # 清理其他图片文件（只保留主图片）
+        for filepath in saved_files[1:]:
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        
+        return jsonify({
+            'success': True,
+            'message': f'人脸更新申请已提交，处理了{len(features_list)}张有效图片，请等待管理员审核',
+            'request_id': face_request.id,
+            'processed_images': len(features_list),
+            'total_uploaded': len(saved_files)
+        })
+        
+    except Exception as e:
+        # 清理上传的文件
+        if 'saved_files' in locals():
+            for filepath in saved_files:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+        
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': f'提交申请失败: {str(e)}'
+        }), 500 
