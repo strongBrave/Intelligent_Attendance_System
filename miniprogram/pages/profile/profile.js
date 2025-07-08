@@ -199,7 +199,8 @@ Page({
       'normal': '正常',
       'late': '迟到',
       'absent': '缺勤',
-      'early_leave': '早退'
+      'early_leave': '早退',
+      'late_leave': '晚退'
     }
     return statusMap[status] || status
   },
