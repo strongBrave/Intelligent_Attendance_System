@@ -1,11 +1,13 @@
 from flask import Blueprint, request, jsonify
-from ..models import User, Department, Attendance, db
+from ..models import User, Department, Attendance, FaceData, FaceUpdateRequest, db
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta, time, date
 from sqlalchemy import or_, desc, asc
 import re
+import os
 from ..utils import format_location_display
+from ..face_service import face_service
 
 bp = Blueprint('admin', __name__)
 
@@ -1647,4 +1649,274 @@ def get_attendance_map_data():
         return jsonify({
             'success': False,
             'error': f'获取地图数据失败: {str(e)}'
+        }), 500
+
+# ==================== 人脸更新申请审核相关接口 ====================
+
+@bp.route('/api/admin/face-update-requests', methods=['GET'])
+@jwt_required()
+def get_face_update_requests():
+    """获取所有人脸更新申请列表"""
+    current_user = User.query.filter_by(id=int(get_jwt_identity())).first()
+    if not current_user or current_user.role != 'admin':
+        return jsonify({'error': '权限不足'}), 403
+    
+    try:
+        # 获取查询参数
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        status = request.args.get('status')  # pending, approved, rejected
+        
+        # 构建查询 - 明确指定JOIN条件以避免外键歧义
+        query = FaceUpdateRequest.query.join(User, FaceUpdateRequest.user_id == User.id)
+        
+        if status:
+            query = query.filter(FaceUpdateRequest.status == status)
+        
+        # 分页查询，按创建时间倒序
+        pagination = query.order_by(FaceUpdateRequest.created_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
+        requests_list = []
+        for req in pagination.items:
+            status_map = {
+                'pending': '待审核',
+                'approved': '已通过',
+                'rejected': '已拒绝'
+            }
+            
+            request_data = {
+                'id': req.id,
+                'user_id': req.user_id,
+                'user_name': req.user.name,
+                'user_phone': req.user.phone,
+                'department': req.user.department.name if req.user.department else '未分配',
+                'status': req.status,
+                'status_text': status_map.get(req.status, req.status),
+                'reason': req.reason,
+                'admin_comment': req.admin_comment,
+                'created_at': req.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'updated_at': req.updated_at.strftime('%Y-%m-%d %H:%M:%S') if req.updated_at else None,
+                'admin_name': req.admin.name if req.admin else None
+            }
+            requests_list.append(request_data)
+        
+        return jsonify({
+            'success': True,
+            'requests': requests_list,
+            'total': pagination.total,
+            'pages': pagination.pages,
+            'current_page': page,
+            'per_page': per_page
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'获取申请列表失败: {str(e)}'
+        }), 500
+
+@bp.route('/api/admin/face-update-requests/<int:request_id>', methods=['GET'])
+@jwt_required()
+def get_face_update_request_detail(request_id):
+    """获取人脸更新申请详情"""
+    current_user = User.query.filter_by(id=int(get_jwt_identity())).first()
+    if not current_user or current_user.role != 'admin':
+        return jsonify({'error': '权限不足'}), 403
+    
+    try:
+        face_request = FaceUpdateRequest.query.get(request_id)
+        if not face_request:
+            return jsonify({'error': '申请记录不存在'}), 404
+        
+        status_map = {
+            'pending': '待审核',
+            'approved': '已通过', 
+            'rejected': '已拒绝'
+        }
+        
+        # 计算人脸相似度（如果两个特征向量都存在）
+        similarity_score = None
+        if face_request.get_old_features() is not None and face_request.get_new_features() is not None:
+            old_features = face_request.get_old_features()
+            new_features = face_request.get_new_features()
+            similarity_score = face_service.calculate_similarity(old_features, new_features)
+        
+        request_detail = {
+            'id': face_request.id,
+            'user': {
+                'id': face_request.user.id,
+                'name': face_request.user.name,
+                'phone': face_request.user.phone,
+                'department': face_request.user.department.name if face_request.user.department else '未分配'
+            },
+            'old_face_url': face_request.old_face_url,
+            'new_face_url': face_request.new_face_url,
+            'status': face_request.status,
+            'status_text': status_map.get(face_request.status, face_request.status),
+            'reason': face_request.reason,
+            'admin_comment': face_request.admin_comment,
+            'similarity_score': round(similarity_score, 4) if similarity_score is not None else None,
+            'created_at': face_request.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'updated_at': face_request.updated_at.strftime('%Y-%m-%d %H:%M:%S') if face_request.updated_at else None,
+            'admin': {
+                'id': face_request.admin.id,
+                'name': face_request.admin.name
+            } if face_request.admin else None
+        }
+        
+        return jsonify({
+            'success': True,
+            'request': request_detail
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'获取申请详情失败: {str(e)}'
+        }), 500
+
+@bp.route('/api/admin/face-update-requests/<int:request_id>/approve', methods=['PUT'])
+@jwt_required()
+def approve_face_update_request(request_id):
+    """批准人脸更新申请"""
+    current_user = User.query.filter_by(id=int(get_jwt_identity())).first()
+    if not current_user or current_user.role != 'admin':
+        return jsonify({'error': '权限不足'}), 403
+    
+    try:
+        face_request = FaceUpdateRequest.query.get(request_id)
+        if not face_request:
+            return jsonify({'error': '申请记录不存在'}), 404
+        
+        if face_request.status != 'pending':
+            return jsonify({'error': '只能审核待处理的申请'}), 400
+        
+        data = request.get_json()
+        admin_comment = data.get('admin_comment', '').strip()
+        
+        # 更新用户的人脸数据
+        user = face_request.user
+        
+        if user.face_data:
+            # 更新现有人脸数据
+            # 删除旧照片文件
+            if user.face_data.face_url and os.path.exists(user.face_data.face_url):
+                try:
+                    os.remove(user.face_data.face_url)
+                except:
+                    pass  # 删除失败不影响流程
+            
+            # 更新人脸数据
+            user.face_data.face_url = face_request.new_face_url
+            user.face_data.set_features(face_request.get_new_features())
+        else:
+            # 创建新的人脸数据
+            face_data = FaceData(
+                face_url=face_request.new_face_url
+            )
+            face_data.set_features(face_request.get_new_features())
+            db.session.add(face_data)
+            db.session.flush()  # 获取face_data的id
+            user.face_data_id = face_data.id
+        
+        # 更新申请状态
+        face_request.status = 'approved'
+        face_request.admin_comment = admin_comment
+        face_request.admin_id = current_user.id
+        face_request.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '申请已批准，用户人脸数据已更新'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': f'批准申请失败: {str(e)}'
+        }), 500
+
+@bp.route('/api/admin/face-update-requests/<int:request_id>/reject', methods=['PUT'])
+@jwt_required()
+def reject_face_update_request(request_id):
+    """拒绝人脸更新申请"""
+    current_user = User.query.filter_by(id=int(get_jwt_identity())).first()
+    if not current_user or current_user.role != 'admin':
+        return jsonify({'error': '权限不足'}), 403
+    
+    try:
+        face_request = FaceUpdateRequest.query.get(request_id)
+        if not face_request:
+            return jsonify({'error': '申请记录不存在'}), 404
+        
+        if face_request.status != 'pending':
+            return jsonify({'error': '只能审核待处理的申请'}), 400
+        
+        data = request.get_json()
+        admin_comment = data.get('admin_comment', '').strip()
+        
+        if not admin_comment:
+            return jsonify({'error': '拒绝申请时必须填写拒绝原因'}), 400
+        
+        # 删除上传的新照片文件
+        if face_request.new_face_url and os.path.exists(face_request.new_face_url):
+            try:
+                os.remove(face_request.new_face_url)
+            except:
+                pass  # 删除失败不影响流程
+        
+        # 更新申请状态
+        face_request.status = 'rejected'
+        face_request.admin_comment = admin_comment
+        face_request.admin_id = current_user.id
+        face_request.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '申请已拒绝'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': f'拒绝申请失败: {str(e)}'
+        }), 500
+
+@bp.route('/api/admin/face-update-requests/stats', methods=['GET'])
+@jwt_required()
+def get_face_update_request_stats():
+    """获取人脸更新申请统计信息"""
+    current_user = User.query.filter_by(id=int(get_jwt_identity())).first()
+    if not current_user or current_user.role != 'admin':
+        return jsonify({'error': '权限不足'}), 403
+    
+    try:
+        # 统计各状态的申请数量
+        pending_count = FaceUpdateRequest.query.filter_by(status='pending').count()
+        approved_count = FaceUpdateRequest.query.filter_by(status='approved').count()
+        rejected_count = FaceUpdateRequest.query.filter_by(status='rejected').count()
+        total_count = pending_count + approved_count + rejected_count
+        
+        return jsonify({
+            'success': True,
+            'stats': {
+                'total': total_count,
+                'pending': pending_count,
+                'approved': approved_count,
+                'rejected': rejected_count
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'获取统计信息失败: {str(e)}'
         }), 500 

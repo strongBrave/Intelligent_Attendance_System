@@ -1,8 +1,9 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from ..models import User, Attendance, Department, db
+from ..models import User, Attendance, Department, FaceData, FaceUpdateRequest, db
 from datetime import datetime, timedelta
 import os
+import uuid
 from ..face_service import face_service
 from ..utils import is_within_range, format_location_display
 
@@ -572,4 +573,136 @@ def detect_faces():
         return jsonify({
             'success': False,
             'message': f'人脸检测处理失败: {str(e)}'
-        }), 500 
+        }), 500
+
+# ==================== 人脸更新申请相关接口 ====================
+
+@bp.route('/api/user/face-update-request', methods=['POST'])
+@jwt_required()
+def submit_face_update_request():
+    """用户提交人脸更新申请"""
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    
+    if not user:
+        return jsonify({'error': '用户不存在'}), 404
+    
+    # 检查是否有待处理的申请
+    existing_request = FaceUpdateRequest.query.filter_by(
+        user_id=current_user_id,
+        status='pending'
+    ).first()
+    
+    if existing_request:
+        return jsonify({'error': '您已有待处理的人脸更新申请，请等待审核结果'}), 400
+    
+    # 获取申请参数
+    face_image = request.files.get('face_image')
+    reason = request.form.get('reason', '').strip()
+    
+    if not face_image or not face_image.filename:
+        return jsonify({'error': '请上传新的人脸照片'}), 400
+    
+    if not reason:
+        return jsonify({'error': '请填写申请原因'}), 400
+    
+    try:
+        # 保存新照片
+        filename = f"face_update_{current_user_id}_{uuid.uuid4().hex}.jpg"
+        upload_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'uploads', 'faces')
+        os.makedirs(upload_dir, exist_ok=True)
+        new_face_path = os.path.join(upload_dir, filename)
+        face_image.save(new_face_path)
+        
+        # 提取新照片的人脸特征
+        print(f"[人脸检测] 开始为用户 {current_user_id} 提取人脸特征，图片路径: {new_face_path}")
+        new_features, _ = face_service.extract_face_features(new_face_path)
+        
+        if new_features is None:
+            print(f"[人脸检测] 用户 {current_user_id} 人脸特征提取失败，删除无效照片")
+            os.remove(new_face_path)  # 删除无效照片
+            return jsonify({'error': '未检测到人脸，请确保照片中有清晰的人脸'}), 400
+        
+        print(f"[人脸检测] 用户 {current_user_id} 人脸特征提取成功，特征维度: {len(new_features)}")
+        
+        # 获取原照片信息
+        old_face_url = None
+        old_features = None
+        if user.face_data:
+            old_face_url = user.face_data.face_url
+            old_features = user.face_data.get_features()
+            print(f"[人脸检测] 用户 {current_user_id} 已有原人脸数据，路径: {old_face_url}")
+        else:
+            print(f"[人脸检测] 用户 {current_user_id} 首次注册人脸")
+        
+        # 创建审核申请
+        face_request = FaceUpdateRequest(
+            user_id=current_user_id,
+            old_face_url=old_face_url,
+            new_face_url=new_face_path,
+            reason=reason,
+            status='pending'
+        )
+        
+        # 设置特征向量
+        if old_features is not None:
+            face_request.set_old_features(old_features)
+        face_request.set_new_features(new_features)
+        
+        db.session.add(face_request)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '人脸更新申请已提交，请等待管理员审核',
+            'request_id': face_request.id
+        })
+        
+    except Exception as e:
+        # 清理上传的文件
+        if 'new_face_path' in locals() and os.path.exists(new_face_path):
+            os.remove(new_face_path)
+        
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': f'提交申请失败: {str(e)}'
+        }), 500
+
+@bp.route('/api/user/face-update-request/status', methods=['GET'])
+@jwt_required()
+def get_face_update_request_status():
+    """获取用户的人脸更新申请状态"""
+    current_user_id = int(get_jwt_identity())
+    
+    # 查找最新的申请
+    latest_request = FaceUpdateRequest.query.filter_by(
+        user_id=current_user_id
+    ).order_by(FaceUpdateRequest.created_at.desc()).first()
+    
+    if not latest_request:
+        return jsonify({
+            'success': True,
+            'has_request': False,
+            'message': '暂无人脸更新申请记录'
+        })
+    
+    status_map = {
+        'pending': '待审核',
+        'approved': '已通过',
+        'rejected': '已拒绝'
+    }
+    
+    return jsonify({
+        'success': True,
+        'has_request': True,
+        'request': {
+            'id': latest_request.id,
+            'status': latest_request.status,
+            'status_text': status_map.get(latest_request.status, latest_request.status),
+            'reason': latest_request.reason,
+            'admin_comment': latest_request.admin_comment,
+            'created_at': latest_request.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'updated_at': latest_request.updated_at.strftime('%Y-%m-%d %H:%M:%S') if latest_request.updated_at else None
+        }
+    }) 
