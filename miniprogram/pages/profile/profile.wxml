@@ -33,6 +33,20 @@
         </view>
       </view>
       
+      <!-- 修改人脸 -->
+      <view class="menu-item" bindtap="showFaceUpdateDialog">
+        <view class="menu-icon face-icon">
+          <text class="icon-text">👤</text>
+        </view>
+        <view class="menu-content">
+          <text class="menu-title">修改人脸</text>
+          <text class="menu-subtitle">更新人脸识别照片</text>
+        </view>
+        <view class="menu-arrow">
+          <text class="arrow-text">›</text>
+        </view>
+      </view>
+      
       <view class="menu-item" bindtap="goToSettings">
         <view class="menu-icon settings-icon">
           <text class="icon-text">⚙️</text>
@@ -119,10 +133,82 @@
     </view>
   </view>
 
+  <!-- 人脸更新申请状态 -->
+  <view class="face-request-status" wx:if="{{faceRequestStatus.has_request}}">
+    <view class="section-header">
+      <text class="section-title">人脸更新申请</text>
+    </view>
+    <view class="request-card">
+      <view class="request-info">
+        <view class="request-status {{faceRequestStatus.request.status}}">
+          <text class="status-text">{{faceRequestStatus.request.status_text}}</text>
+        </view>
+        <view class="request-details">
+          <text class="request-reason">申请原因：{{faceRequestStatus.request.reason}}</text>
+          <text class="request-time">申请时间：{{faceRequestStatus.request.created_at}}</text>
+          <text class="admin-comment" wx:if="{{faceRequestStatus.request.admin_comment}}">
+            管理员备注：{{faceRequestStatus.request.admin_comment}}
+          </text>
+        </view>
+      </view>
+    </view>
+  </view>
+
   <!-- 底部操作 -->
   <view class="bottom-actions">
     <button class="logout-btn" bindtap="logout">
       <text class="btn-text">退出登录</text>
     </button>
+  </view>
+</view>
+
+<!-- 人脸更新弹窗 -->
+<view class="face-update-modal" wx:if="{{showFaceUpdateModal}}">
+  <view class="modal-overlay" bindtap="hideFaceUpdateDialog"></view>
+  <view class="modal-content">
+    <view class="modal-header">
+      <text class="modal-title">申请修改人脸</text>
+      <view class="modal-close" bindtap="hideFaceUpdateDialog">
+        <text class="close-text">✕</text>
+      </view>
+    </view>
+    
+    <view class="modal-body">
+      <!-- 照片上传区域 -->
+      <view class="upload-section">
+        <text class="upload-label">上传新的人脸照片</text>
+        <view class="upload-area" bindtap="chooseImage">
+          <image wx:if="{{faceUpdateForm.imageUrl}}" class="preview-image" src="{{faceUpdateForm.imageUrl}}" mode="aspectFit"></image>
+          <view wx:else class="upload-placeholder">
+            <text class="upload-text">📷</text>
+            <text class="upload-hint">点击上传照片</text>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 申请原因 -->
+      <view class="reason-section">
+        <text class="reason-label">申请原因</text>
+        <textarea 
+          class="reason-input" 
+          placeholder="请简述修改人脸的原因..." 
+          value="{{faceUpdateForm.reason}}"
+          bindinput="onReasonInput"
+          maxlength="200"
+        ></textarea>
+        <text class="char-count">{{faceUpdateForm.reason.length}}/200</text>
+      </view>
+    </view>
+    
+    <view class="modal-footer">
+      <button class="cancel-btn" bindtap="hideFaceUpdateDialog">取消</button>
+      <button 
+        class="submit-btn" 
+        bindtap="submitFaceUpdateRequest"
+        disabled="{{!canSubmit || submitting}}"
+      >
+        {{submitting ? '提交中...' : '提交申请'}}
+      </button>
+    </view>
   </view>
 </view> 
