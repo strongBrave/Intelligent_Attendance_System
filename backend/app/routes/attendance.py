@@ -4,7 +4,7 @@ from ..models import User, Attendance, Department, db
 from datetime import datetime, timedelta
 import os
 from ..face_service import face_service
-from ..utils import is_within_range
+from ..utils import is_within_range, format_location_display
 
 bp = Blueprint('attendance', __name__)
 
@@ -91,7 +91,7 @@ def check_in():
         'data': {
             'time': now.strftime('%Y-%m-%d %H:%M:%S'),
             'status': status,
-            'location': location
+            'location': format_location_display(location)
         }
     })
 
@@ -192,7 +192,7 @@ def check_out():
         'data': {
             'time': now.strftime('%Y-%m-%d %H:%M:%S'),
             'status': status,
-            'location': location
+            'location': format_location_display(location)
         }
     })
 
@@ -233,7 +233,7 @@ def get_attendance_records():
             'check_type': record.check_type,
             'status': record.status,
             'time': record.time.strftime('%Y-%m-%d %H:%M:%S') if record.time else None,
-            'location': record.location
+            'location': format_location_display(record.location)
         }
         records.append(record_data)
     
@@ -273,12 +273,12 @@ def get_today_attendance():
         'check_in': {
             'time': check_in.time.strftime('%Y-%m-%d %H:%M:%S') if check_in and check_in.time else None,
             'status': check_in.status if check_in else None,
-            'location': check_in.location if check_in else None
+            'location': format_location_display(check_in.location) if check_in else None
         },
         'check_out': {
             'time': check_out.time.strftime('%Y-%m-%d %H:%M:%S') if check_out and check_out.time else None,
             'status': check_out.status if check_out else None,
-            'location': check_out.location if check_out else None
+            'location': format_location_display(check_out.location) if check_out else None
         }
     })
 
@@ -313,12 +313,12 @@ def get_user_today_attendance():
             'check_in': {
                 'time': check_in.time.strftime('%Y-%m-%d %H:%M:%S') if check_in and check_in.time else None,
                 'status': check_in.status if check_in else None,
-                'location': check_in.location if check_in else None
+                'location': format_location_display(check_in.location) if check_in else None
             },
             'check_out': {
                 'time': check_out.time.strftime('%Y-%m-%d %H:%M:%S') if check_out and check_out.time else None,
                 'status': check_out.status if check_out else None,
-                'location': check_out.location if check_out else None
+                'location': format_location_display(check_out.location) if check_out else None
             }
         }
     })
@@ -343,30 +343,45 @@ def get_month_attendance():
             Attendance.user_id == user_id,
             Attendance.date >= start_date,
             Attendance.date < end_date
-        ).all()
+        ).order_by(Attendance.date, Attendance.time).all()
         
-        result = []
+        # 按日期组织数据
+        daily_attendance = {}
         for attendance in attendances:
-            item = {
-                'date': attendance.date.strftime('%Y-%m-%d'),
-                'status': 'absent'
-            }
+            date_str = attendance.date.strftime('%Y-%m-%d')
             
-            if attendance.sign_in_time:
-                item['sign_in'] = {
-                    'time': attendance.sign_in_time.strftime('%Y-%m-%d %H:%M:%S'),
-                    'status': attendance.sign_in_status
+            if date_str not in daily_attendance:
+                daily_attendance[date_str] = {
+                    'date': date_str,
+                    'sign_in': None,
+                    'sign_out': None,
+                    'status': 'absent',
+                    'location': None
                 }
-                item['status'] = attendance.sign_in_status
             
-            if attendance.sign_out_time:
-                item['sign_out'] = {
-                    'time': attendance.sign_out_time.strftime('%Y-%m-%d %H:%M:%S'),
-                    'status': attendance.sign_out_status
+            # 根据check_type分类处理
+            if attendance.check_type == 'sign_in':
+                daily_attendance[date_str]['sign_in'] = {
+                    'time': attendance.time.strftime('%H:%M:%S'),
+                    'status': attendance.status,
+                    'location': format_location_display(attendance.location)
                 }
-                item['status'] = attendance.sign_out_status
-            
-            result.append(item)
+                daily_attendance[date_str]['status'] = attendance.status
+                daily_attendance[date_str]['location'] = format_location_display(attendance.location)
+            elif attendance.check_type == 'sign_out':
+                daily_attendance[date_str]['sign_out'] = {
+                    'time': attendance.time.strftime('%H:%M:%S'),
+                    'status': attendance.status,
+                    'location': format_location_display(attendance.location)
+                }
+                # 如果有签退记录，状态以签退为准（包含早退、晚退等）
+                if attendance.status in ['early_leave', 'late_leave']:
+                    daily_attendance[date_str]['status'] = attendance.status
+                if not daily_attendance[date_str]['location']:
+                    daily_attendance[date_str]['location'] = format_location_display(attendance.location)
+        
+        # 转换为列表格式
+        result = list(daily_attendance.values())
         
         return jsonify({
             'success': True,
