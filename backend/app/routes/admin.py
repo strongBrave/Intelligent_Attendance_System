@@ -1812,12 +1812,12 @@ def approve_face_update_request(request_id):
         
         if user.face_data:
             # 更新现有人脸数据
-            # 删除旧照片文件
-            if user.face_data.face_url and os.path.exists(user.face_data.face_url):
-                try:
-                    os.remove(user.face_data.face_url)
-                except:
-                    pass  # 删除失败不影响流程
+            # # 不删除旧照片文件，如果删除的话，再去看这个请求的时候，会看不到原来的照片
+            # if user.face_data.face_url and os.path.exists(user.face_data.face_url):
+            #     try:
+            #         os.remove(user.face_data.face_url)
+            #     except:
+            #         pass  # 删除失败不影响流程
             
             # 更新人脸数据
             user.face_data.face_url = face_request.new_face_url
