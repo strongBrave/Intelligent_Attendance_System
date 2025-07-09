@@ -235,31 +235,71 @@ Page({
 
   // 尝试获取详细地址（可选）
   tryGetDetailedAddress(latitude, longitude) {
-    // 使用OpenStreetMap Nominatim API获取地址（免费）
+    // 当前Key为JS API Key，无法用于Web服务API
+    const apiKey = '5c3066c36f6fa333afc7f55f78c33ff0'  // 需要替换为实际的Web服务API Key
+    
+         // API Key已配置，继续调用高德API
+    
+    // 使用高德地图API获取地址
     wx.request({
-      url: 'https://nominatim.openstreetmap.org/reverse',
+      url: 'https://restapi.amap.com/v3/geocode/regeo',
       data: {
-        format: 'json',
-        lat: latitude,
-        lon: longitude,
-        zoom: 18,
-        addressdetails: 1
-      },
-      header: {
-        'User-Agent': 'AttendanceApp/1.0'
+        key: apiKey,
+        location: `${longitude},${latitude}`, // 高德API格式：经度,纬度
+        poitype: '',
+        radius: 1000,
+        extensions: 'all',
+        batch: false,
+        roadlevel: 0
       },
       success: (res) => {
-        console.log('[调试] 详细地址API响应:', res)
-        if (res.data && res.data.display_name) {
-          const detailedAddress = res.data.display_name
-          console.log('[调试] 获取到详细地址:', detailedAddress)
+        console.log('[调试] 高德地图API响应:', res)
+        if (res.data && res.data.status === '1' && res.data.regeocode) {
+          const regeocode = res.data.regeocode
+          let detailedAddress = regeocode.formatted_address || ''
+          
+          // 如果没有formatted_address，尝试组合地址
+          if (!detailedAddress && regeocode.addressComponent) {
+            const addr = regeocode.addressComponent
+            const addressParts = [
+              addr.province || '',
+              addr.city || '',
+              addr.district || '',
+              addr.township || '',
+              addr.streetNumber?.street || '',
+              addr.streetNumber?.number || ''
+            ]
+            detailedAddress = addressParts.filter(part => part).join('')
+          }
+          
+          if (detailedAddress) {
+            console.log('[调试] 获取到详细地址:', detailedAddress)
+            this.setData({
+              'location.address': detailedAddress
+            })
+          } else {
+            // API调用成功但没有地址信息，显示坐标
+            const coordinateAddress = `经纬度: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+            this.setData({
+              'location.address': coordinateAddress
+            })
+          }
+        } else {
+          console.log('[调试] 高德API错误:', res.data?.info || '未知错误')
+          // API调用失败，显示坐标
+          const coordinateAddress = `经纬度: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
           this.setData({
-            'location.address': detailedAddress
+            'location.address': coordinateAddress
           })
         }
       },
       fail: (err) => {
-        console.log('[调试] 获取详细地址失败，继续使用坐标地址')
+        console.log('[调试] 获取详细地址失败，继续使用坐标地址:', err)
+        // 网络请求失败，显示坐标
+        const coordinateAddress = `经纬度: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+        this.setData({
+          'location.address': coordinateAddress
+        })
       }
     })
   },
@@ -688,43 +728,53 @@ Page({
       return
     }
 
+    // TODO: 请替换为您的Web服务API Key
+    const apiKey = '5c3066c36f6fa333afc7f55f78c33ff0'  // 需要替换为实际的Web服务API Key
+    
+         // API Key已配置，继续调用高德API
+
     wx.showLoading({
       title: '搜索中...'
     })
 
     console.log('开始搜索:', this.data.searchKeyword)
 
-    // 使用OpenStreetMap Nominatim API搜索地点（免费）
+    // 使用高德地图API搜索地点
     wx.request({
-      url: 'https://nominatim.openstreetmap.org/search',
+      url: 'https://restapi.amap.com/v3/place/text',
       data: {
-        format: 'json',
-        q: this.data.searchKeyword,
-        limit: 10,
-        addressdetails: 1
-      },
-      header: {
-        'User-Agent': 'AttendanceApp/1.0'
+        key: apiKey,
+        keywords: this.data.searchKeyword,
+        types: '',
+        city: '',
+        citylimit: false,
+        children: 1,
+        offset: 10,
+        page: 1,
+        extensions: 'all'
       },
       success: (res) => {
         wx.hideLoading()
-        console.log('搜索响应:', res.data)
+        console.log('高德搜索响应:', res.data)
         
-        if (res.data && res.data.length > 0) {
+        if (res.data && res.data.status === '1' && res.data.pois && res.data.pois.length > 0) {
           this.setData({
-            searchResults: res.data.map(place => ({
-              id: place.place_id,
-              name: place.display_name.split(',')[0],
-              address: place.display_name,
-              location: `${place.lat},${place.lon}`,
-              distance: null
-            }))
+            searchResults: res.data.pois.map(place => {
+              const [lng, lat] = place.location.split(',')
+              return {
+                id: place.id,
+                name: place.name,
+                address: place.address || place.pname + place.cityname + place.adname,
+                location: `${lat},${lng}`, // 转换为纬度,经度格式
+                distance: place.distance || null
+              }
+            })
           })
           console.log('搜索结果:', this.data.searchResults)
         } else {
-          console.log('搜索失败，没有找到结果')
+          console.log('搜索失败，API响应:', res.data)
           wx.showToast({
-            title: '未找到相关地点',
+            title: res.data?.info || '未找到相关地点',
             icon: 'none'
           })
           this.setData({

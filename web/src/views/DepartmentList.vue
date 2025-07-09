@@ -577,21 +577,43 @@ const createMap = () => {
 // 根据坐标获取地址
 const getAddressFromCoords = async (lat, lng) => {
   try {
-    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
-      headers: {
-        'User-Agent': 'AttendanceApp/1.0'
-      }
-    })
+    // TODO: 请替换为您的Web服务API Key
+    // 当前Key为JS API Key，无法用于Web服务API
+    const apiKey = '5c3066c36f6fa333afc7f55f78c33ff0'  // 需要替换为实际的Web服务API Key
+    
+         // API Key已配置，继续调用高德API
+    
+    const response = await fetch(`https://restapi.amap.com/v3/geocode/regeo?key=${apiKey}&location=${lng},${lat}&poitype=&radius=1000&extensions=all&batch=false&roadlevel=0`)
     const data = await response.json()
     
-    if (data && data.display_name) {
-      selectedLocation = `${lat},${lng} (${data.display_name})`
+    console.log('高德API响应:', data) // 调试信息
+    
+    if (data && data.status === '1' && data.regeocode) {
+      const regeocode = data.regeocode
+      let address = regeocode.formatted_address || ''
+      
+      // 如果没有formatted_address，尝试组合地址
+      if (!address && regeocode.addressComponent) {
+        const addr = regeocode.addressComponent
+        const addressParts = [
+          addr.province || '',
+          addr.city || '',
+          addr.district || '',
+          addr.township || '',
+          addr.streetNumber?.street || '',
+          addr.streetNumber?.number || ''
+        ]
+        address = addressParts.filter(part => part).join('')
+      }
+      
+      selectedLocation = `${lat},${lng} (${address || '经纬度坐标'})`
     } else {
-      selectedLocation = `${lat},${lng} (未知地址)`
+      console.log('高德API错误:', data?.info || '未知错误')
+      selectedLocation = `${lat},${lng} (经纬度坐标)`
     }
   } catch (error) {
     console.error('获取地址失败:', error)
-    selectedLocation = `${lat},${lng} (未知地址)`
+    selectedLocation = `${lat},${lng} (经纬度坐标)`
   }
 }
 
@@ -602,35 +624,39 @@ const searchPlace = async () => {
     return
   }
 
+  // TODO: 请替换为您的Web服务API Key
+  const apiKey = '5c3066c36f6fa333afc7f55f78c33ff0'  // 需要替换为实际的Web服务API Key
+  
+     // API Key已配置，继续调用高德API
+
   searching.value = true
   console.log('开始搜索:', searchKeyword.value)
   
   try {
-    // 使用OpenStreetMap Nominatim API搜索地点（免费）
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchKeyword.value)}&limit=10&addressdetails=1`
+    // 使用高德地图API搜索地点
+    const url = `https://restapi.amap.com/v3/place/text?key=${apiKey}&keywords=${encodeURIComponent(searchKeyword.value)}&types=&city=&citylimit=false&children=1&offset=10&page=1&extensions=all`
     console.log('请求URL:', url)
     
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'AttendanceApp/1.0'
-      }
-    })
+    const response = await fetch(url)
     const data = await response.json()
     
-    console.log('搜索响应:', data)
+    console.log('高德搜索响应:', data)
     
-    if (data && data.length > 0) {
-      searchResults.value = data.map(place => ({
-        id: place.place_id,
-        name: place.display_name.split(',')[0],
-        address: place.display_name,
-        location: `${place.lat},${place.lon}`,
-        distance: null
-      }))
+    if (data && data.status === '1' && data.pois && data.pois.length > 0) {
+      searchResults.value = data.pois.map(place => {
+        const [lng, lat] = place.location.split(',')
+        return {
+          id: place.id,
+          name: place.name,
+          address: place.address || place.pname + place.cityname + place.adname,
+          location: `${lat},${lng}`, // 转换为纬度,经度格式
+          distance: place.distance || null
+        }
+      })
       console.log('搜索结果:', searchResults.value)
     } else {
-      console.log('搜索失败，没有找到结果')
-      ElMessage.warning('未找到相关地点')
+      console.log('搜索失败，API响应:', data)
+      ElMessage.warning(data?.info || '未找到相关地点')
       searchResults.value = []
     }
   } catch (error) {

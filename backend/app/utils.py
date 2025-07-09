@@ -141,7 +141,7 @@ def parse_time(time_str):
         return None 
     
 def format_location_display(location_str):
-    """格式化位置显示，遇到纯经纬度时自动调用Nominatim API获取详细地址"""
+    """格式化位置显示，遇到纯经纬度时自动调用高德地图API获取详细地址"""
     if not location_str:
         return '未知位置'
     # 如果已经是格式化的地址（包含括号），直接返回
@@ -154,7 +154,7 @@ def format_location_display(location_str):
             if len(coords) == 2:
                 lat = float(coords[0].strip())
                 lng = float(coords[1].strip())
-                # 调用Nominatim API获取详细地址
+                # 调用高德地图API获取详细地址
                 address = get_address_from_coords(lat, lng)
                 return f"{lat:.2f}, {lng:.2f} ({address})"
         except:
@@ -162,25 +162,49 @@ def format_location_display(location_str):
     return location_str
 
 def get_address_from_coords(lat, lng):
-    """调用OpenStreetMap Nominatim API获取详细地址"""
+    """调用高德地图API获取详细地址"""
     try:
-        url = "https://nominatim.openstreetmap.org/reverse"
+        # 当前Key为JS API Key，无法用于Web服务API
+        api_key = "5c3066c36f6fa333afc7f55f78c33ff0"  # 需要替换为实际的Web服务API Key
+        
+        # API Key已配置，继续调用高德API
+        
+        url = "https://restapi.amap.com/v3/geocode/regeo"
         params = {
-            "format": "json",
-            "lat": lat,
-            "lon": lng,
-            "zoom": 18,
-            "addressdetails": 1
+            "key": api_key,
+            "location": f"{lng},{lat}",  # 高德API格式：经度,纬度
+            "poitype": "",
+            "radius": 1000,
+            "extensions": "all",
+            "batch": "false",
+            "roadlevel": 0
         }
-        headers = {
-            "User-Agent": "AttendanceApp/1.0"
-        }
-        resp = requests.get(url, params=params, headers=headers, timeout=3)
+        
+        resp = requests.get(url, params=params, timeout=5)
         if resp.status_code == 200:
             data = resp.json()
-            if data.get("display_name"):
-                return data["display_name"]
-        return "未知地址"
+            print(f"高德API响应: {data}")  # 调试信息
+            if data.get("status") == "1" and data.get("regeocode"):
+                regeocode = data["regeocode"]
+                formatted_address = regeocode.get("formatted_address", "")
+                if formatted_address:
+                    return formatted_address
+                # 如果没有formatted_address，尝试组合地址
+                address_component = regeocode.get("addressComponent", {})
+                province = address_component.get("province", "")
+                city = address_component.get("city", "")
+                district = address_component.get("district", "")
+                township = address_component.get("township", "")
+                street = address_component.get("streetNumber", {}).get("street", "")
+                number = address_component.get("streetNumber", {}).get("number", "")
+                
+                address_parts = [province, city, district, township, street, number]
+                combined_address = "".join([part for part in address_parts if part])
+                return combined_address if combined_address else f"经纬度: {lat:.6f}, {lng:.6f}"
+            else:
+                print(f"高德API错误: {data.get('info', '未知错误')}")
+                return f"经纬度: {lat:.6f}, {lng:.6f}"
+        return f"经纬度: {lat:.6f}, {lng:.6f}"
     except Exception as e:
-        print("逆地理编码失败:", e)
-        return "未知地址"
+        print("高德逆地理编码失败:", e)
+        return f"经纬度: {lat:.6f}, {lng:.6f}"
