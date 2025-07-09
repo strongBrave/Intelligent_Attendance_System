@@ -845,8 +845,9 @@ onUnmounted(() => {
   if (distributionChartInstance) distributionChartInstance.dispose()
   if (departmentChartInstance) departmentChartInstance.dispose()
   if (trendChartInstance) trendChartInstance.dispose()
-  if (signInMapInstance) signInMapInstance.dispose()
-  if (signOutMapInstance) signOutMapInstance.dispose()
+  // 清理地图实例
+  if (signInMapInstance) signInMapInstance.destroy()
+  if (signOutMapInstance) signOutMapInstance.destroy()
   
   // 移除事件监听
   window.removeEventListener('resize', handleResize)
