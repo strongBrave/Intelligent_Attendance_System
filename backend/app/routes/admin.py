@@ -241,10 +241,21 @@ def delete_user(user_id):
     if not user:
         return jsonify({'error': '用户不存在'}), 404
     
-    db.session.delete(user)
-    db.session.commit()
-    
-    return jsonify({'message': '用户删除成功'})
+    try:
+        # 先删除相关的人脸更新申请记录
+        FaceUpdateRequest.query.filter_by(user_id=user_id).delete()
+        
+        # 删除用户相关的考勤记录（可选，根据业务需求决定）
+        # Attendance.query.filter_by(user_id=user_id).delete()
+        
+        # 最后删除用户
+        db.session.delete(user)
+        db.session.commit()
+        
+        return jsonify({'message': '用户删除成功'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'删除用户失败: {str(e)}'}), 500
 
 @bp.route('/api/admin/departments', methods=['GET'])
 @jwt_required()
