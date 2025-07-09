@@ -183,7 +183,7 @@ def get_address_from_coords(lat, lng):
         resp = requests.get(url, params=params, timeout=5)
         if resp.status_code == 200:
             data = resp.json()
-            print(f"高德API响应: {data}")  # 调试信息
+
             if data.get("status") == "1" and data.get("regeocode"):
                 regeocode = data["regeocode"]
                 formatted_address = regeocode.get("formatted_address", "")
