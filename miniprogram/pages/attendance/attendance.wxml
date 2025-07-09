@@ -157,15 +157,6 @@
       <text class="btn-text">签退</text>
       <text class="btn-time">{{currentTime}}</text>
     </button>
-
-    <!-- 调试按钮 -->
-    <button 
-      class="debug-btn"
-      bindtap="debugButtonStatus"
-      style="margin-top: 10px; font-size: 12px; padding: 5px 10px; background: #f0f0f0;"
-    >
-      调试状态
-    </button>
     
 
 
