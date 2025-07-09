@@ -50,17 +50,87 @@ Page({
 
   // 加载用户信息
   loadUserInfo() {
-    const userInfo = app.getUserInfo()
-    if (userInfo) {
-      this.setData({
-        userInfo: {
-          name: userInfo.name || '',
-          phone: userInfo.phone || '',
-          department: userInfo.department || null,
-          role: userInfo.role || ''
-        }
-      })
+    const token = wx.getStorageSync('token')
+    if (!token) {
+      // 如果没有token，尝试从本地缓存获取
+      const userInfo = app.getUserInfo()
+      if (userInfo) {
+        this.setData({
+          userInfo: {
+            name: userInfo.name || '',
+            phone: userInfo.phone || '',
+            department: userInfo.department || null,
+            role: userInfo.role || ''
+          }
+        })
+      }
+      return
     }
+
+    // 从服务器获取最新的用户信息
+    wx.request({
+      url: `${app.globalData.baseUrl}/api/user/profile`,
+      method: 'GET',
+      header: {
+        'Authorization': `Bearer ${token}`
+      },
+      success: (res) => {
+        if (res.statusCode === 200 && res.data) {
+          const userData = res.data.user || res.data
+          const updatedUserInfo = {
+            name: userData.name || '',
+            phone: userData.phone || '',
+            department: userData.department || null,
+            role: userData.role || ''
+          }
+          
+          // 更新页面显示
+          this.setData({
+            userInfo: updatedUserInfo
+          })
+          
+          // 同时更新app的全局数据和本地存储
+          const fullUserInfo = {
+            id: userData.id,
+            name: userData.name,
+            phone: userData.phone,
+            department: userData.department,
+            role: userData.role
+          }
+          app.globalData.userInfo = fullUserInfo
+          wx.setStorageSync('userInfo', fullUserInfo)
+        } else {
+          console.error('获取用户信息失败:', res.data)
+          // 失败时使用本地缓存
+          const userInfo = app.getUserInfo()
+          if (userInfo) {
+            this.setData({
+              userInfo: {
+                name: userInfo.name || '',
+                phone: userInfo.phone || '',
+                department: userInfo.department || null,
+                role: userInfo.role || ''
+              }
+            })
+          }
+        }
+      },
+      fail: (err) => {
+        console.error('请求用户信息失败:', err)
+        // 失败时使用本地缓存
+        const userInfo = app.getUserInfo()
+        if (userInfo) {
+          this.setData({
+            userInfo: {
+              name: userInfo.name || '',
+              phone: userInfo.phone || '',
+              department: userInfo.department || null,
+              role: userInfo.role || ''
+            }
+          })
+        }
+      }
+    })
   },
 
   // 加载用户头像

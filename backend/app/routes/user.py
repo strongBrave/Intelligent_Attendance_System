@@ -14,12 +14,22 @@ def profile():
     if not user:
         return jsonify({'error': '用户不存在'}), 404
     
+    # 构建部门信息
+    department_info = None
+    if user.department:
+        department_info = {
+            'id': user.department.id,
+            'name': user.department.name
+        }
+    
     return jsonify({
-        'id': user.id,
-        'username': user.username,
-        'phone': user.phone,
-        'role': user.role,
-        'department': user.department.name if user.department else None
+        'user': {
+            'id': user.id,
+            'name': user.name,  # 修改为name字段
+            'phone': user.phone,
+            'role': user.role,
+            'department': department_info  # 返回完整的部门对象
+        }
     })
 
 @bp.route('/api/user/update_profile', methods=['PUT'])
