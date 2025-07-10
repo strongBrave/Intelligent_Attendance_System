@@ -9,16 +9,19 @@
     "pages/forgot-password/forgot-password"
   ],
   "window": {
-    "navigationBarTitleText": "人脸考勤系统",
-    "navigationBarBackgroundColor": "#667eea",
+    "navigationBarTitleText": "智慧考勤系统",
+    "navigationBarBackgroundColor": "#6366f1",
     "navigationBarTextStyle": "white",
-    "backgroundColor": "#f8f9fa"
+    "backgroundColor": "#f8fafc",
+    "backgroundTextStyle": "light",
+    "enablePullDownRefresh": true
   },
   "tabBar": {
-    "color": "#999999",
-    "selectedColor": "#667eea",
+    "color": "#94a3b8",
+    "selectedColor": "#6366f1",
     "backgroundColor": "#ffffff",
     "borderStyle": "black",
+    "position": "bottom",
     "list": [
       {
         "pagePath": "pages/attendance/attendance",
@@ -54,5 +57,7 @@
       "desc": "用于人脸识别打卡，验证您的身份"
     }
   },
-  "requiredPrivateInfos": ["getLocation"]
+  "requiredPrivateInfos": ["getLocation"],
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
 }

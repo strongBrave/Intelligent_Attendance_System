@@ -1,21 +1,59 @@
 /* 签到/签退界面样式 */
 .attendance-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
   padding: 20rpx;
   box-sizing: border-box;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* 添加动态背景装饰 */
+.attendance-container::before {
+  content: '';
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.05) 25%, transparent 25%);
+  background-size: 120rpx 120rpx;
+  animation: floatBackground 25s linear infinite;
+  z-index: 0;
+}
+
+@keyframes floatBackground {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  100% { transform: translate(-120rpx, -120rpx) rotate(360deg); }
 }
 
 /* 顶部信息栏 */
 .header {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 20rpx;
-  padding: 30rpx;
-  margin-bottom: 20rpx;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.12), 
+              inset 0 1rpx 0 rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20rpx);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  z-index: 1;
+  animation: slideInTop 0.6s ease-out;
+}
+
+@keyframes slideInTop {
+  from {
+    opacity: 0;
+    transform: translateY(-30rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .user-info {
@@ -25,14 +63,16 @@
 
 .user-name {
   font-size: 36rpx;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 10rpx;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 8rpx;
+  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.2);
 }
 
 .department {
-  font-size: 28rpx;
-  color: #666;
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
 }
 
 .time-info {
@@ -41,59 +81,97 @@
 
 .current-time {
   display: block;
-  font-size: 40rpx;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 10rpx;
+  font-size: 42rpx;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 8rpx;
+  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.2);
 }
 
 .current-date {
   display: block;
-  font-size: 28rpx;
-  color: #666;
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
 }
 
 /* 距离状态显示 */
 .distance-status {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 20rpx;
-  padding: 30rpx;
-  margin-bottom: 20rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.12),
+              inset 0 1rpx 0 rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20rpx);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  z-index: 1;
+  animation: slideInLeft 0.6s ease-out 0.1s both;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .status-indicator {
   display: flex;
   align-items: center;
-  gap: 20rpx;
+  gap: 24rpx;
+  position: relative;
 }
 
-.status-indicator.in-range {
-  border-left: 8rpx solid #52c41a;
+.status-indicator.in-range::before {
+  content: '';
+  position: absolute;
+  left: -32rpx;
+  top: 0;
+  bottom: 0;
+  width: 6rpx;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 3rpx;
 }
 
-.status-indicator.out-range {
-  border-left: 8rpx solid #ff4d4f;
+.status-indicator.out-range::before {
+  content: '';
+  position: absolute;
+  left: -32rpx;
+  top: 0;
+  bottom: 0;
+  width: 6rpx;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border-radius: 3rpx;
 }
 
 .status-icon {
-  width: 60rpx;
-  height: 60rpx;
+  width: 64rpx;
+  height: 64rpx;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 32rpx;
+  position: relative;
+  overflow: hidden;
 }
 
 .in-range .status-icon {
-  background: #f6ffed;
-  color: #52c41a;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.2) 100%);
+  color: #10b981;
+  box-shadow: 0 4rpx 16rpx rgba(16, 185, 129, 0.3);
 }
 
 .out-range .status-icon {
-  background: #fff2f0;
-  color: #ff4d4f;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.2) 100%);
+  color: #ef4444;
+  box-shadow: 0 4rpx 16rpx rgba(239, 68, 68, 0.3);
 }
 
 .status-text {
@@ -103,80 +181,122 @@
 .status-message {
   display: block;
   font-size: 32rpx;
-  font-weight: bold;
+  font-weight: 700;
   margin-bottom: 8rpx;
+  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.2);
 }
 
 .in-range .status-message {
-  color: #52c41a;
+  color: white;
 }
 
 .out-range .status-message {
-  color: #ff4d4f;
+  color: white;
 }
 
 .threshold-info {
   display: block;
   font-size: 24rpx;
-  color: #999;
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 500;
 }
 
 /* 地图显示区域 */
 .map-section {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 20rpx;
-  padding: 20rpx;
-  margin-bottom: 20rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 24rpx;
+  padding: 24rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.12),
+              inset 0 1rpx 0 rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20rpx);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  z-index: 1;
+  animation: slideInRight 0.6s ease-out 0.2s both;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* 搜索功能样式 */
 .search-section {
-  margin-bottom: 20rpx;
+  margin-bottom: 24rpx;
 }
 
 .search-input-group {
   display: flex;
   align-items: center;
-  gap: 10rpx;
-  margin-bottom: 15rpx;
+  gap: 12rpx;
+  margin-bottom: 16rpx;
 }
 
 .search-input {
   flex: 1;
-  height: 70rpx;
+  height: 72rpx;
   padding: 0 20rpx;
-  border: 2rpx solid #e8e8e8;
-  border-radius: 35rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.3);
+  border-radius: 36rpx;
   font-size: 28rpx;
-  background: white;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  backdrop-filter: blur(10rpx);
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2rpx);
+  box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .search-btn {
-  width: 70rpx;
-  height: 70rpx;
+  width: 72rpx;
+  height: 72rpx;
   border-radius: 50%;
-  background: #1890ff;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   color: white;
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32rpx;
+  font-size: 28rpx;
+  box-shadow: 0 4rpx 16rpx rgba(99, 102, 241, 0.3);
+  transition: all 0.3s ease;
+}
+
+.search-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 2rpx 8rpx rgba(99, 102, 241, 0.4);
 }
 
 .search-results {
   max-height: 400rpx;
   overflow-y: auto;
-  background: white;
-  border-radius: 15rpx;
-  border: 2rpx solid #e8e8e8;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(15rpx);
 }
 
 .search-result-item {
   padding: 20rpx;
-  border-bottom: 1rpx solid #f0f0f0;
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.1);
   cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .search-result-item:last-child {
@@ -184,33 +304,34 @@
 }
 
 .search-result-item:active {
-  background: #f5f5f5;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .result-name {
   font-size: 30rpx;
-  font-weight: bold;
-  color: #333;
+  font-weight: 600;
+  color: white;
   margin-bottom: 8rpx;
 }
 
 .result-address {
   font-size: 26rpx;
-  color: #666;
+  color: rgba(255, 255, 255, 0.8);
   margin-bottom: 5rpx;
 }
 
 .result-distance {
   font-size: 24rpx;
-  color: #999;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
 }
 
 .map-container {
-  border-radius: 15rpx;
+  border-radius: 20rpx;
   overflow: hidden;
-  margin-bottom: 20rpx;
+  margin-bottom: 24rpx;
   position: relative;
-  box-shadow: 0 4rpx 15rpx rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
 }
 
 /* 地图标记样式优化 */
@@ -222,21 +343,25 @@
 /* 地图图例 */
 .map-legend {
   position: absolute;
-  top: 10rpx;
-  right: 10rpx;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 10rpx;
-  padding: 15rpx;
+  top: 16rpx;
+  right: 16rpx;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 16rpx;
+  padding: 16rpx;
   z-index: 999;
-  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(20rpx);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 10rpx;
+  gap: 12rpx;
   margin-bottom: 8rpx;
-  font-size: 24rpx;
+  font-size: 22rpx;
+  color: white;
+  font-weight: 500;
 }
 
 .legend-item:last-child {
@@ -247,18 +372,17 @@
   width: 24rpx;
   height: 24rpx;
   display: block;
+  border-radius: 50%;
 }
 
 .legend-arrow.user {
-  background: #1890ff;
-  mask: url('/images/user-location-arrow.svg') no-repeat center;
-  mask-size: contain;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  box-shadow: 0 2rpx 8rpx rgba(99, 102, 241, 0.3);
 }
 
 .legend-arrow.work {
-  background: #ff4d4f;
-  mask: url('/images/work-location-arrow.svg') no-repeat center;
-  mask-size: contain;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 2rpx 8rpx rgba(239, 68, 68, 0.3);
 }
 
 .map-controls {
@@ -267,57 +391,96 @@
 }
 
 .control-btn {
-  background: #1890ff;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   color: white;
   border: none;
-  border-radius: 50rpx;
-  padding: 20rpx 40rpx;
-  font-size: 28rpx;
+  border-radius: 32rpx;
+  padding: 16rpx 32rpx;
+  font-size: 26rpx;
+  font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 10rpx;
+  gap: 8rpx;
+  box-shadow: 0 4rpx 16rpx rgba(99, 102, 241, 0.3);
+  transition: all 0.3s ease;
+}
+
+.control-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 2rpx 8rpx rgba(99, 102, 241, 0.4);
 }
 
 /* 地图切换按钮 */
 .map-toggle {
   display: flex;
   justify-content: center;
-  margin-bottom: 20rpx;
+  margin-bottom: 24rpx;
 }
 
 .toggle-btn {
-  background: rgba(255, 255, 255, 0.9);
-  color: #1890ff;
-  border: 2rpx solid #1890ff;
-  border-radius: 50rpx;
-  padding: 20rpx 40rpx;
-  font-size: 28rpx;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 2rpx solid rgba(255, 255, 255, 0.3);
+  border-radius: 32rpx;
+  padding: 16rpx 32rpx;
+  font-size: 26rpx;
+  font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 10rpx;
+  gap: 8rpx;
+  backdrop-filter: blur(20rpx);
+  transition: all 0.3s ease;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
+}
+
+.toggle-btn:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* 今日考勤状态 */
 .today-status {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 20rpx;
-  padding: 30rpx;
-  margin-bottom: 20rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.12),
+              inset 0 1rpx 0 rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20rpx);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  z-index: 1;
+  animation: slideInUp 0.6s ease-out 0.3s both;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.status-card {
+  width: 100%;
 }
 
 .status-title {
   font-size: 32rpx;
-  font-weight: bold;
-  color: #333;
+  font-weight: 700;
+  color: white;
   margin-bottom: 20rpx;
   text-align: center;
+  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.2);
 }
 
 .status-content {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
+  gap: 16rpx;
 }
 
 .status-item {
@@ -325,175 +488,261 @@
   align-items: center;
   justify-content: space-between;
   padding: 20rpx;
-  background: #f8f9fa;
-  border-radius: 15rpx;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16rpx;
+  backdrop-filter: blur(10rpx);
+  border: 1rpx solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.status-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2rpx);
 }
 
 .status-label {
   font-size: 28rpx;
-  color: #666;
-  min-width: 160rpx;
+  color: rgba(255, 255, 255, 0.8);
+  min-width: 140rpx;
+  font-weight: 500;
 }
 
 .status-value {
   font-size: 28rpx;
-  font-weight: bold;
+  font-weight: 600;
   flex: 1;
   text-align: center;
 }
 
 .status-value.has-time {
-  color: #52c41a;
+  color: #10b981;
+  text-shadow: 0 2rpx 8rpx rgba(16, 185, 129, 0.3);
 }
 
 .status-value.no-time {
-  color: #999;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .status-badge {
-  padding: 8rpx 16rpx;
-  border-radius: 20rpx;
-  font-size: 24rpx;
+  padding: 6rpx 14rpx;
+  border-radius: 16rpx;
+  font-size: 22rpx;
   color: white;
-  margin-left: 20rpx;
+  margin-left: 16rpx;
+  font-weight: 500;
+  backdrop-filter: blur(10rpx);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.15);
 }
 
 .status-badge.normal {
-  background: #52c41a;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
 }
 
 .status-badge.late {
-  background: #faad14;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
 }
 
 .status-badge.absent {
-  background: #ff4d4f;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
 }
 
 .status-badge.early-leave {
-  background: #fa8c16;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
 }
 
 /* 打卡按钮区域 */
 .attendance-buttons {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 20rpx;
-  padding: 30rpx;
-  margin-bottom: 20rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.12),
+              inset 0 1rpx 0 rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20rpx);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  z-index: 1;
+  animation: slideInUp 0.6s ease-out 0.4s both;
 }
 
 .status-tip {
-  margin-bottom: 30rpx;
+  margin-bottom: 32rpx;
 }
 
 .tip-content {
   display: flex;
   align-items: center;
-  gap: 15rpx;
+  gap: 16rpx;
   padding: 20rpx;
-  border-radius: 15rpx;
-  font-size: 28rpx;
+  border-radius: 16rpx;
+  font-size: 26rpx;
+  font-weight: 500;
+  backdrop-filter: blur(15rpx);
+  border: 1rpx solid rgba(255, 255, 255, 0.1);
 }
 
 .tip-content.error {
-  background: #fff2f0;
-  color: #ff4d4f;
-  border: 2rpx solid #ffccc7;
+  background: rgba(239, 68, 68, 0.15);
+  color: #fecaca;
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
 .tip-content.warning {
-  background: #fffbe6;
-  color: #faad14;
-  border: 2rpx solid #ffe58f;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fde68a;
+  border-color: rgba(245, 158, 11, 0.3);
 }
 
 .attendance-btn {
   width: 100%;
-  height: 120rpx;
-  border-radius: 20rpx;
+  height: 128rpx;
+  border-radius: 24rpx;
   margin-bottom: 20rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 20rpx;
+  gap: 16rpx;
   font-size: 32rpx;
-  font-weight: bold;
+  font-weight: 600;
   border: none;
   position: relative;
   overflow: hidden;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(15rpx);
+}
+
+.attendance-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s;
+}
+
+.attendance-btn.active::before {
+  left: 100%;
 }
 
 .attendance-btn.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   color: white;
-  box-shadow: 0 8rpx 25rpx rgba(102, 126, 234, 0.4);
+  box-shadow: 0 12rpx 32rpx rgba(99, 102, 241, 0.4),
+              inset 0 1rpx 0 rgba(255, 255, 255, 0.2);
+  border: 1rpx solid rgba(255, 255, 255, 0.1);
+}
+
+.attendance-btn.active:active {
+  transform: scale(0.98) translateY(2rpx);
+  box-shadow: 0 6rpx 20rpx rgba(99, 102, 241, 0.5);
 }
 
 .attendance-btn.disabled {
-  background: #f5f5f5;
-  color: #ccc;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.4);
+  border: 1rpx solid rgba(255, 255, 255, 0.1);
+  cursor: not-allowed;
 }
 
 .btn-icon {
   font-size: 40rpx;
+  filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.2));
 }
 
 .btn-text {
   font-size: 32rpx;
+  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.2);
 }
 
 .btn-time {
   position: absolute;
-  right: 30rpx;
+  right: 32rpx;
   font-size: 24rpx;
-  opacity: 0.8;
+  opacity: 0.9;
+  font-weight: 500;
 }
 
 .sign-in-btn.active {
-  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
-  box-shadow: 0 8rpx 25rpx rgba(82, 196, 26, 0.4);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 12rpx 32rpx rgba(16, 185, 129, 0.4),
+              inset 0 1rpx 0 rgba(255, 255, 255, 0.2);
+}
+
+.sign-in-btn.active:active {
+  box-shadow: 0 6rpx 20rpx rgba(16, 185, 129, 0.5);
 }
 
 .sign-out-btn.active {
-  background: linear-gradient(135deg, #1890ff 0%, #40a9ff 100%);
-  box-shadow: 0 8rpx 25rpx rgba(24, 144, 255, 0.4);
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  box-shadow: 0 12rpx 32rpx rgba(59, 130, 246, 0.4),
+              inset 0 1rpx 0 rgba(255, 255, 255, 0.2);
+}
+
+.sign-out-btn.active:active {
+  box-shadow: 0 6rpx 20rpx rgba(59, 130, 246, 0.5);
 }
 
 .face-btn.active {
-  background: linear-gradient(135deg, #722ed1 0%, #9254de 100%);
-  box-shadow: 0 8rpx 25rpx rgba(114, 46, 209, 0.4);
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  box-shadow: 0 12rpx 32rpx rgba(139, 92, 246, 0.4),
+              inset 0 1rpx 0 rgba(255, 255, 255, 0.2);
+}
+
+.face-btn.active:active {
+  box-shadow: 0 6rpx 20rpx rgba(139, 92, 246, 0.5);
 }
 
 /* 位置信息 */
 .location-info {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 20rpx;
-  padding: 30rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 24rpx;
+  padding: 32rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.12),
+              inset 0 1rpx 0 rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20rpx);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  z-index: 1;
+  animation: slideInUp 0.6s ease-out 0.5s both;
 }
 
 .location-item {
   display: flex;
   align-items: center;
-  margin-bottom: 15rpx;
+  margin-bottom: 16rpx;
+  padding: 16rpx;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16rpx;
+  backdrop-filter: blur(10rpx);
+  border: 1rpx solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
 }
 
 .location-item:last-child {
   margin-bottom: 0;
 }
 
+.location-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2rpx);
+}
+
 .location-label {
-  font-size: 28rpx;
-  color: #666;
-  min-width: 160rpx;
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.8);
+  min-width: 140rpx;
+  font-weight: 500;
 }
 
 .location-value {
-  font-size: 28rpx;
-  color: #333;
+  font-size: 26rpx;
+  color: white;
   flex: 1;
   word-break: break-all;
+  font-weight: 500;
+  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.2);
 }
 
 /* 图标字体 */
