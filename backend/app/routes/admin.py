@@ -1611,43 +1611,37 @@ def get_attendance_map_data():
         sign_out_data = []  # 签退类：签退、早退、晚退
         
         for record in attendance_records:
-            if record.location:
+            if record.latitude and record.longitude:
                 # 解析经纬度
                 try:
-                    coords_part = record.location.split(' (')[0] if '(' in record.location else record.location
-                    if ',' in coords_part:
-                        lat_str, lng_str = coords_part.split(',')
-                        lat = float(lat_str.strip())
-                        lng = float(lng_str.strip())
+                    lat = float(record.latitude)
+                    lng = float(record.longitude)
+                    address = record.location
                         
-                        # 获取地址显示
-                        formatted_location = format_location_display(record.location)
-                        address = formatted_location.split(' (')[1].rstrip(')') if '(' in formatted_location else '未知地址'
-                        
-                        # 构建地图点数据
-                        point_data = {
-                            'id': record.id,
-                            'user_name': record.user.name,
-                            'user_id': record.user_id,
-                            'lat': lat,
-                            'lng': lng,
-                            'address': address,
-                            'time': record.time.strftime('%H:%M:%S'),
-                            'status': record.status,
-                            'check_type': record.check_type,
-                            'remark': record.remark or ''
-                        }
-                        
-                        # 分类：签到类包括签到、迟到、缺勤；签退类包括签退、早退、晚退
-                        if record.check_type == 'sign_in':
-                            sign_in_data.append(point_data)
-                        elif record.check_type == 'sign_out':
-                            sign_out_data.append(point_data)
+                    # 构建地图点数据
+                    point_data = {
+                        'id': record.id,
+                        'user_name': record.user.name,
+                        'user_id': record.user_id,
+                        'lat': lat,
+                        'lng': lng,
+                        'address': address,
+                        'time': record.time.strftime('%H:%M:%S'),
+                        'status': record.status,
+                        'check_type': record.check_type,
+                        'remark': record.remark or ''
+                    }
+                    
+                    # 分类：签到类包括签到、迟到、缺勤；签退类包括签退、早退、晚退
+                    if record.check_type == 'sign_in':
+                        sign_in_data.append(point_data)
+                    elif record.check_type == 'sign_out':
+                        sign_out_data.append(point_data)
                             
                 except (ValueError, IndexError) as e:
                     # 跳过无效的位置数据
                     continue
-        
+        print(sign_in_data)
         return jsonify({
             'success': True,
             'date': date_str,
