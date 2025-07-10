@@ -1,7 +1,7 @@
 // app.js
 App({
   globalData: {
-    baseUrl: 'http://localhost:5000', // 本地测试
+    baseUrl: 'http://172.20.10.3:5000', // 使用时，要换成你的ip地址
     userInfo: null,
     token: null
   },
