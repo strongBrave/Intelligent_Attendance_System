@@ -72,7 +72,7 @@ def register_face():
                 try:
                     db.session.delete(user)
                     db.session.commit()
-                    return jsonify({'code': 1, 'msg': 'AI服务器连接失败，无法提取人脸特征，用户注册已回滚'})
+                    return jsonify({'code': 1, 'msg': '人脸模型处理失败，无法提取人脸特征，用户注册已回滚'})
                 except Exception as rollback_error:
                     db.session.rollback()
                     return jsonify({'code': 1, 'msg': f'人脸特征提取失败且用户回滚失败: {str(rollback_error)}'})
@@ -173,7 +173,7 @@ def register_multiple_faces():
                 try:
                     db.session.delete(user)
                     db.session.commit()
-                    return jsonify({'code': 1, 'msg': 'AI服务器连接失败，无法从任何图片中提取人脸特征，用户注册已回滚'})
+                    return jsonify({'code': 1, 'msg': '人脸模型处理失败，无法从任何图片中提取人脸特征，用户注册已回滚'})
                 except Exception as rollback_error:
                     db.session.rollback()
                     return jsonify({'code': 1, 'msg': f'人脸特征提取失败且用户回滚失败: {str(rollback_error)}'})
@@ -195,7 +195,7 @@ def register_multiple_faces():
                 try:
                     db.session.delete(user)
                     db.session.commit()
-                    return jsonify({'code': 1, 'msg': 'AI服务器连接失败，无法提取人脸特征，用户注册已回滚'})
+                    return jsonify({'code': 1, 'msg': '人脸模型处理失败，无法提取人脸特征，用户注册已回滚'})
                 except Exception as rollback_error:
                     db.session.rollback()
                     return jsonify({'code': 1, 'msg': f'人脸特征提取失败且用户回滚失败: {str(rollback_error)}'})
@@ -464,11 +464,11 @@ def delete_face(user_id):
         db.session.rollback()
         return jsonify({'code': 1, 'msg': f'删除失败: {str(e)}'}) 
 
-@bp.route('/test-cloud-api', methods=['GET'])
-def test_cloud_api():
-    """测试云端API连接"""
+@bp.route('/test-model', methods=['GET'])
+def test_model():
+    """测试本地模型功能"""
     try:
-        success, message = face_service.test_cloud_api_connection()
+        success, message = face_service.test_model_functionality()
         
         return jsonify({
             'success': success,

@@ -3,12 +3,9 @@ import json
 import numpy as np
 import cv2
 from PIL import Image
-from scipy.datasets import face
 import torch
-import requests
-import base64
 from io import BytesIO
-from facenet_pytorch import MTCNN
+from facenet_pytorch import MTCNN, InceptionResnetV1
 from .models import db, User, FaceData, Attendance
 
 class FaceService:
@@ -16,73 +13,29 @@ class FaceService:
         """初始化人脸识别服务"""
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         
-        # 初始化MTCNN人脸检测器（只用于人脸检测，不用于特征提取）
-        self.mtcnn = MTCNN(keep_all=False, device=self.device)
+        # 初始化MTCNN人脸检测器
+        self.mtcnn = MTCNN(
+            image_size=160, 
+            margin=0, 
+            min_face_size=20,
+            thresholds=[0.6, 0.7, 0.7], 
+            factor=0.709, 
+            post_process=True,
+            device=self.device
+        )
         
-        # 云端特征提取API配置
-        # 访问云端需要先映射端口，否则无法访问，ssh -p 11265 -L 5001:127.0.0.1:4999 root@connect.cqa1.seetacloud.com
-        self.cloud_api_url = "http://127.0.0.1:5001/extract_features"
-        self.cloud_api_timeout = int(os.getenv('CLOUD_API_TIMEOUT', '30'))  # 30秒超时
+        # 初始化FaceNet特征提取模型
+        self.resnet = InceptionResnetV1(pretrained='vggface2').eval().to(self.device)
         
         # 设置相似度阈值
-        self.similarity_threshold = 0.9
+        self.similarity_threshold = 0.6  # 调整阈值，facenet通常使用较低阈值
         
         # 创建上传目录
         self.upload_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'faces')
         os.makedirs(self.upload_folder, exist_ok=True)
 
-    def _image_to_base64(self, image):
-        """将PIL Image转换为base64字符串"""
-        buffered = BytesIO()
-        image.save(buffered, format="JPEG")
-        img_str = base64.b64encode(buffered.getvalue()).decode()
-        return img_str
-
-    def _call_cloud_feature_api(self, image_base64):
-        """调用云端特征提取API"""
-        try:
-            headers = {
-                'Content-Type': 'application/json'
-            }
-            # 移除None值的headers
-            headers = {k: v for k, v in headers.items() if v is not None}
-            
-            payload = {
-                'image_data': image_base64,
-                'format': 'base64'
-            }
-            
-            response = requests.post(
-                self.cloud_api_url,
-                json=payload,
-                headers=headers,
-                timeout=self.cloud_api_timeout
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                if result.get('success', False):
-                    features = np.array(result.get('features', []))
-                    return features if len(features) > 0 else None
-                else:
-                    print(f"云端API返回错误: {result.get('error', 'Unknown error')}")
-                    return None
-            else:
-                print(f"云端API请求失败: {response.status_code}")
-                return None
-                
-        except requests.exceptions.Timeout:
-            print("云端API请求超时")
-            return None
-        except requests.exceptions.RequestException as e:
-            print(f"云端API请求异常: {str(e)}")
-            return None
-        except Exception as e:
-            print(f"云端特征提取失败: {str(e)}")
-            return None
-
     def extract_face_features(self, image_data):
-        """从图片数据中提取人脸特征向量（使用云端模型）"""
+        """从图片数据中提取人脸特征向量（使用本地FaceNet模型）"""
         try:
             # 将图片数据转换为PIL Image
             if isinstance(image_data, str):
@@ -90,31 +43,28 @@ class FaceService:
                 image = Image.open(image_data).convert('RGB')
             else:
                 # 如果是二进制数据
-                image = Image.open(image_data).convert('RGB')
+                image = Image.open(BytesIO(image_data)).convert('RGB')
             
-            # 使用MTCNN检测人脸
-            face = self.mtcnn(image)
-            if face is None:
+            # 使用MTCNN检测和裁剪人脸
+            face_tensor = self.mtcnn(image)
+            if face_tensor is None:
                 return None, None
             
-            # 获取人脸框坐标
+            # 获取人脸框坐标（用于调试或显示）
             boxes, _ = self.mtcnn.detect(image)
             face_box = None
             if boxes is not None and len(boxes) > 0:
                 # 取第一个检测到的人脸框
                 face_box = boxes[0].tolist()  # [x1, y1, x2, y2]
             
-            # 将检测到的人脸转换为PIL Image
-            face_tensor = face.permute(1, 2, 0)  # 转换维度 (C, H, W) -> (H, W, C)
-            face_tensor = (face_tensor + 1) / 2 * 255  # 归一化到0-255
-            face_array = face_tensor.cpu().numpy().astype(np.uint8)
-            face_image = Image.fromarray(face_array)
+            # 添加batch维度并移到设备
+            face_tensor = face_tensor.unsqueeze(0).to(self.device)
             
-            # 将人脸图片转换为base64
-            face_base64 = self._image_to_base64(face_image)
-            
-            # 调用云端API提取特征
-            features = self._call_cloud_feature_api(face_base64)
+            # 使用FaceNet提取特征
+            with torch.no_grad():
+                embeddings = self.resnet(face_tensor)
+                # 转换为numpy数组
+                features = embeddings.cpu().numpy().flatten()
             
             return features, face_box
             
@@ -235,12 +185,13 @@ class FaceService:
     def get_model_info(self):
         """获取模型信息"""
         return {
-            "model": "Cloud-based Feature Extraction",
-            "api_url": self.cloud_api_url,
-            "feature_dim": "Variable (depends on cloud model)",
+            "model": "FaceNet (facenet-pytorch)",
+            "detection_model": "MTCNN",
+            "feature_extraction_model": "InceptionResnetV1 (VGGFace2)",
+            "feature_dim": 512,
             "similarity_threshold": self.similarity_threshold,
             "device": str(self.device),
-            "local_detection": "MTCNN"
+            "local_processing": True
         }
 
     def detect_faces_with_boxes(self, image_data):
@@ -274,25 +225,23 @@ class FaceService:
         except Exception as e:
             return [], 0, 0
 
-    # 测试云端API连接
-    def test_cloud_api_connection(self):
-        """测试云端API连接"""
+    def test_model_functionality(self):
+        """测试本地模型功能"""
         try:
-            # 创建一个简单的测试图片
-            test_image = Image.new('RGB', (160, 160), color='white')
-            test_base64 = self._image_to_base64(test_image)
+            # 创建一个简单的测试图片，模拟人脸
+            test_image = Image.new('RGB', (224, 224), color=(128, 128, 128))
             
-            # 调用API
-            features = self._call_cloud_feature_api(test_base64)
+            # 尝试检测人脸（期望失败，因为是空白图片）
+            face_tensor = self.mtcnn(test_image)
             
-            if features is not None:
-                return True, f"云端API连接成功，特征维度: {len(features)}"
-            else:
-                return False, "云端API连接失败"
+            # 测试模型是否正确加载
+            model_device = next(self.resnet.parameters()).device
+            model_loaded = True
+            
+            return True, f"本地模型测试成功 - 设备: {model_device}, FaceNet已加载: {model_loaded}"
                 
         except Exception as e:
-            return False, f"云端API测试失败: {str(e)}"
+            return False, f"本地模型测试失败: {str(e)}"
 
 # 创建全局实例
-face_service = FaceService() 
-# face_service.test_cloud_api_connection() // test cloud api connection
+face_service = FaceService()
