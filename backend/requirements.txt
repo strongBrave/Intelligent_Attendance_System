@@ -4,11 +4,12 @@ Flask-SQLAlchemy
 Flask-JWT-Extended
 PyJWT
 requests
-pillow
+pillow==10.2.0
 opencv-python
 facenet-pytorch
 scikit-learn
 numpy
-torch
-torchvision
+torch==2.2.0
+torchvision==0.17.0
 schedule 
+sqlalchemy
